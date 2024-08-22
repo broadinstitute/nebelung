@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, NotRequired, Optional, TypedDict, TypeVar
 
 import pandera as pa

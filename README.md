@@ -1,7 +1,7 @@
 Nebelung: Python wrapper for the Firecloud API
 ---
 
-![nebelung.jpeg](https://github.com/broadinstitute/nebelung/blob/main/nebelung.jpg?raw=true)
+![](https://github.com/broadinstitute/nebelung/blob/main/nebelung.jpg?raw=true)
 
 This package provides a wrapper around the [Firecloud](https://pypi.org/project/firecloud/) package and performs a similar, though cat-themed, function as [dalmation](https://github.com/getzlab/dalmatian).
 

@@ -23,12 +23,11 @@ The package has two classes, `TerraWorkspace` and `TerraWorkflow`, and a variety
 from nebelung.terra_workspace import TerraWorkspace
 
 terra_workspace = TerraWorkspace(
-    workspace_namespace="the_workspace_namespace",
-    workspace_name="the_workspace_name",
+    workspace_namespace="terra_workspace_namespace",
+    workspace_name="terra_workspace_name",
+    owners=["user1@example.com", "group@firecloud.org"],
 )
 ```
-
-`TerraWorkspace` also supports an optional argument `firecloud_owners`, which should be a list of Firecloud user email addresses (or group names) and is used to set ownership of workflow-related resources. This argument should be set to a list of authorized users/groups if you plan on using the `update_workflow` method.
 
 ### Entities
 
@@ -44,16 +43,19 @@ df = terra_workspace.get_entities("sample", YourPanderaSchema)
 terra_workspace.upload_entities(df)  # first column of `df` should be, e.g., `sample_id` 
 
 # create a sample set named, e.g., `samples_2024-08-21T17-24-19_call_cnvs"
-sample_set_id = terra_workspace.created_sample_set(["sample_id1", "sample_id2"], suffix="call_cnvs")
+sample_set_id = terra_workspace.created_sample_set(
+    ["sample_id1", "sample_id2"], 
+    suffix="call_cnvs",
+)
 ```
 
 ### Workflow outputs
 
 ```python
-# collect workflow outputs as a list of `nebelung.types.TaskResult` objects 
+# collect workflow outputs from successful jobs as a list of `nebelung.types.TaskResult` objects 
 outputs = terra_workspace.collect_workflow_outputs() 
 
-# collect workflow outputs for jobs submitted in the last week
+# collect workflow outputs from successful jobs submitted in the last week
 import datetime
 a_week_ago = datetime.datetime.now() - datetime.timedelta(days=7)
 outputs = terra_workspace.collect_workflow_outputs(since=a_week_ago)
@@ -70,11 +72,11 @@ The standard method for making a WDL-based workflow available in a Terra workspa
 - The workflow isn't updated on Dockstore immediately, since it depends on continuous deployment (CD).
 - The Dockstore UI doesn't provide great visibility into CD build failures and their causes.
 
-An alternative to Dockstore is to push the workflow directly to Firecloud. However, [that API endpoint](https://api.firecloud.org/#/Method%20Repository/post_api_methods) doesn't support uploading a WDL script that imports other local WDL scripts, nor a zip file of cross-referenced WDL scripts (like Cromwell does). The endpoint will accept WDL that imports other scripts via URLs, but currently only from the `githubusercontent.com` domain.
+An alternative to Dockstore is to push the WDL directly to Firecloud. However, [that API endpoint](https://api.firecloud.org/#/Method%20Repository/post_api_methods) doesn't support uploading a WDL script that imports other local WDL scripts, nor a zip file of cross-referenced WDL scripts (like Cromwell does). The endpoint will accept WDL that imports other scripts via URLs, but currently only from the `githubusercontent.com` domain.
 
 ### Method persistence with GitHub gists
 
-Thus, Nebelung (ab)uses [GitHub gists](https://gist.github.com/) to persist all the WDL scripts for a workflow as multiple files belonging to a single gist, then uploads the top-level WDL script's code to Firecloud. Any `import "./path/to/included/script.wdl" as other_script` statement is rewritten so that the imported script is persisted in the gist and the import statement uses its resulting `https://gist.githubusercontent.com` URL instead of a local path. This happens recursively, so local imports can have their own local imports.
+Thus, Nebelung (ab)uses [GitHub gists](https://gist.github.com/) to persist all the WDL scripts for a workflow as multiple files belonging to a single gist, then uploads the top-level WDL script's code to Firecloud. Any `import "./path/to/included/script.wdl" as other_script` statement is rewritten so that the imported script is persisted in the gist and thus imported from a `https://gist.githubusercontent.com` URL. This happens recursively, so local imports can have their own local imports.
 
 ### Method config
 
@@ -106,7 +108,7 @@ To aid in automation and make it easier to submit jobs manually without filling 
 
 ### Versioning
 
-Some information about a job's method isn't easily recovered via the Firecloud API later on. Both `update_workflow` and `collect_workflow_outputs` are written to make it easier to connect workflow outputs to method versions for use in object (workflow output files and values) versioning. Include these workflow inputs in the WDL to enable this feature:
+Some information about a submitted job's method isn't easily recovered via the Firecloud API later on. Both `update_workflow` and `collect_workflow_outputs` are written to make it easier to connect workflow outputs to method versions for use in object (workflow output files and values) versioning. Include these workflow inputs in the WDL to enable this feature:
 
 ```wdl
 version 1.0
@@ -121,7 +123,7 @@ workflow call_cnvs {
 
 The `update_workflow` method will automatically include these workflow inputs in the new method config's inputs, with `workflow_source_url` being set dynamically to the URL of the GitHub gist of that WDL script and `workflow_version` available for explicitly versioning the WDL.
 
-Because GitHub gist has built-in versioning, a `workflow_source_url` stored in a job submission's inputs will always resolve to the exact WDL script that was used in the job, even if that method is updated later. 
+Because GitHub gist has its own built-in versioning, a `workflow_source_url` stored in a job submission's inputs will always resolve to the exact WDL script that was used in the job, even if that method is updated later. 
 
 ### Validation
 
@@ -143,24 +145,24 @@ os.environ["WOMTOOL_JAR"] = "/path/to/womtool.jar"
 os.environ["GITHUB_PAT"] = "github_pat_..."
 
 terra_workflow = TerraWorkflow(
-    repo_namespace="omics_pipelines", # should match `methodRepoMethod` from the method config
-    repo_method_name="call_cnvs", # should match `methodRepoMethod` from the method config
-    method_config_name="call_cnvs", # should match `name` from the method config
+    repo_namespace="omics_pipelines", # should match `methodRepoMethod` from method config
+    repo_method_name="call_cnvs", # should match `methodRepoMethod` from method config
+    method_config_name="call_cnvs", # should match `name` from method config
     method_synopsis="This method calls CNVs.",
     workflow_wdl_path=Path("/path/to/call_cnvs.wdl").resolve(),
     method_config_json_path=Path("/path/to/call_cnvs.json").resolve(),
-    github_pat="github_pat_...", # (optional, if not using the GITHUB_PAT ENV variable) 
-    womtool_jar="/path/to/womtool.jar", # (optional, if not using the WOMTOOL_JAR ENV variable) 
+    github_pat="github_pat_...", # (if not using the GITHUB_PAT ENV variable) 
+    womtool_jar="/path/to/womtool.jar", # (if not using the WOMTOOL_JAR ENV variable) 
 )
 
 # create or update a workflow (i.e. method and method config) directly in Firecloud
-terra_workspace.update_workflow(terra_workflow)
+terra_workspace.update_workflow(terra_workflow, n_snapshots_to_keep=20)
 
 # submit a job
 terra_workspace.submit_workflow_run(
     terra_workflow,
     # any arguments below are passed to `firecloud_api.create_submission`
-    entity="samples_2024-08-21T17-24-19_call_cnvs", # sample set ID from `create_sample_set`
+    entity="samples_2024-08-21T17-24-19_call_cnvs", # from `create_sample_set`
     etype="sample_set", # data type of the `entity` arg
     expression="this.samples", # the root entity (i.e. the WDL expects a single sample)
     use_callcache=True,
@@ -173,7 +175,7 @@ terra_workspace.submit_workflow_run(
 
 All calls to the Firecloud API made internally by Nebelung are retried automatically (with a backoff function) in the case of a networking-related error. This function also detects other errors returned by the API and parses the JSON response if the call was successful.
 
-To use this functionality in the cases where Nebelung doesn't provide an endpoint wrapper, import the Firecloud API and the `call_firecloud_api` function and call it directly:
+To use this functionality in the cases where Nebelung doesn't provide an endpoint wrapper, import the Firecloud API and the `call_firecloud_api` function:
 
 ```python
 from firecloud import api as firecloud_api
@@ -182,8 +184,8 @@ from nebelung.utils import call_firecloud_api
 # get a job submission
 result = call_firecloud_api(
     firecloud_api.get_submission,
-    namespace="the_workspace_namespace",
-    workspace="the_workspace_name",
+    namespace="terra_workspace_namespace",
+    workspace="terra_workspace_name",
     max_retries=1,
     # kwargs for `get_submission`
     submission_id="<uuid>",

@@ -27,11 +27,15 @@ class TerraWorkspace:
         self,
         workspace_namespace: str,
         workspace_name: str,
-        firecloud_owners: list[str] = [],
+        firecloud_owners: list[str] | None = None,
     ) -> None:
         self.workspace_namespace = workspace_namespace
         self.workspace_name = workspace_name
-        self.firecloud_owners = firecloud_owners
+
+        if firecloud_owners is None:
+            self.firecloud_owners = []
+        else:
+            self.firecloud_owners = firecloud_owners
 
     def get_entities(
         self, entity_type: str, pandera_schema: Type[PanderaBaseSchema]
@@ -378,10 +382,17 @@ class TerraWorkspace:
                     # this workflow didn't manage to start
                     continue
 
+                if "workflowEntity" not in w:
+                    # this workflow didn't manage to start
+                    continue
+
                 wid = w["workflowId"]
                 base_o.terra_workflow_id = wid
-                base_o.terra_entity_name = w["workflowEntity"]["entityName"]
-                base_o.terra_entity_type = w["workflowEntity"]["entityType"]
+
+                if "workflowEntity" in w:
+                    base_o.terra_entity_name = w["workflowEntity"]["entityName"]
+                    base_o.terra_entity_type = w["workflowEntity"]["entityType"]
+
                 base_o.created_at = pd.Timestamp(
                     ts_input=w["statusLastChangedDate"]
                 ).isoformat()  # pyright: ignore

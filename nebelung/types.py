@@ -25,8 +25,8 @@ class TerraJobSubmissionKwargs(TypedDict):
 
 
 class TaskResult(BaseModel):
+    completed_at: Optional[Any] = None
     crc32c_hash: Optional[str] = None
-    created_at: Optional[Any] = None
     format: Optional[str] = None
     id: Optional[str] = None
     label: Optional[str] = None

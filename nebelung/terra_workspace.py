@@ -393,7 +393,7 @@ class TerraWorkspace:
                     base_o.terra_entity_name = w["workflowEntity"]["entityName"]
                     base_o.terra_entity_type = w["workflowEntity"]["entityType"]
 
-                base_o.created_at = pd.Timestamp(
+                base_o.completed_at = pd.Timestamp(
                     ts_input=w["statusLastChangedDate"]
                 ).isoformat()  # pyright: ignore
 

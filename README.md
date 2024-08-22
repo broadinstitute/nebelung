@@ -43,7 +43,7 @@ df = terra_workspace.get_entities("sample", YourPanderaSchema)
 terra_workspace.upload_entities(df)  # first column of `df` should be, e.g., `sample_id` 
 
 # create a sample set named, e.g., `samples_2024-08-21T17-24-19_call_cnvs"
-sample_set_id = terra_workspace.created_sample_set(
+sample_set_id = terra_workspace.create_sample_set(
     ["sample_id1", "sample_id2"], 
     suffix="call_cnvs",
 )

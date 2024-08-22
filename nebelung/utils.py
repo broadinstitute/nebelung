@@ -233,7 +233,7 @@ def maybe_retry(
 
     :param func: a function
     :param retryable_exceptions: a tuple of retryable exceptions
-    :param max_retries: the maximum number of times to retry
+    :param max_retries: the maximum number of times to retry (can be 0 if not retrying)
     :param waiter: a function that returns the number of seconds to wait given how many
     tries have already happened
     :param kwargs: keyword arguments to `func`
@@ -259,11 +259,14 @@ def maybe_retry(
             n_retries += 1
 
 
-def call_firecloud_api(func: Callable, *args: Any, **kwargs: Any) -> Any:
+def call_firecloud_api(
+    func: Callable, max_retries: int = 2, *args: Any, **kwargs: Any
+) -> Any:
     """
     Call a Firecloud API endpoint and check the response for a valid HTTP status code.
 
     :param func: a `firecloud.api` method
+    :param max_retries: an optional maximum number of times to retry
     :param args: arguments to `func`
     :param kwargs: keyword arguments to `func`
     :return: the API response, if any
@@ -272,7 +275,7 @@ def call_firecloud_api(func: Callable, *args: Any, **kwargs: Any) -> Any:
     res = maybe_retry(
         func,
         retryable_exceptions=(requests.ConnectionError, requests.ConnectTimeout),
-        max_retries=4,
+        max_retries=max_retries,
         *args,
         **kwargs,
     )

@@ -27,24 +27,22 @@ class TerraWorkspace:
         self,
         workspace_namespace: str,
         workspace_name: str,
-        firecloud_owners: list[str] | None = None,
+        owners: list[str] | None = None,
     ) -> None:
         self.workspace_namespace = workspace_namespace
         self.workspace_name = workspace_name
-
-        if firecloud_owners is None:
-            self.firecloud_owners = []
-        else:
-            self.firecloud_owners = firecloud_owners
+        self.owners = [] if owners is None else owners
 
     def get_entities(
-        self, entity_type: str, pandera_schema: Type[PanderaBaseSchema]
-    ) -> TypedDataFrame[PanderaBaseSchema]:
+        self,
+        entity_type: str,
+        pandera_schema: Type[PanderaBaseSchema] | None = None,
+    ) -> pd.DataFrame | TypedDataFrame[PanderaBaseSchema]:
         """
         Get a data frame of entities from a Terra data table.
 
         :param entity_type: the kind of entity (e.g. "sample")
-        :param pandera_schema: a Pandera schema for the output data frame
+        :param pandera_schema: an optional Pandera schema for the output data frame
         :return: a data frame of entities
         """
 
@@ -57,8 +55,12 @@ class TerraWorkspace:
         )
 
         records = [{f"{entity_type}_id": x["name"], **x["attributes"]} for x in j]
+        df = pd.DataFrame(records)
 
-        return type_data_frame(pd.DataFrame(records), pandera_schema)
+        if pandera_schema is None:
+            return df
+
+        return type_data_frame(df, pandera_schema)
 
     def upload_entities(self, df: pd.DataFrame) -> None:
         """
@@ -82,201 +84,6 @@ class TerraWorkspace:
                     entities_tsv=f.name,
                     model="flexible",
                 )
-
-    def create_workspace_config(self, config_body: dict) -> None:
-        """
-        Create a Terra workspace config for the pipeline in Terra.
-
-        :param config_body: a dictionary containing the method config
-        """
-
-        logging.info("Creating workspace config")
-        call_firecloud_api(
-            firecloud_api.create_workspace_config,
-            namespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            body=config_body,
-        )
-
-        logging.info("Setting workspace config ACL")
-        call_firecloud_api(
-            firecloud_api.update_workspace_acl,
-            namespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            acl_updates=[
-                {"email": x, "accessLevel": "OWNER"} for x in self.firecloud_owners
-            ],
-        )
-
-    def update_workspace_config(
-        self, terra_workflow: TerraWorkflow, config_body: dict
-    ) -> None:
-        """
-        Update the Terra workspace config for a given method.
-
-        :param terra_workflow: a `TerraWorkflow` instance
-        :param config_body: a dictionary containing the method config
-        """
-
-        logging.info("Update workspace config")
-        call_firecloud_api(
-            firecloud_api.update_workspace_config,
-            namespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
-            configname=terra_workflow.repo_method_name,
-            body=config_body,
-        )
-
-        logging.info("Setting workspace config ACL")
-        call_firecloud_api(
-            firecloud_api.update_workspace_acl,
-            namespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            acl_updates=[
-                {"email": x, "accessLevel": "OWNER"} for x in self.firecloud_owners
-            ],
-        )
-
-    def create_method(self, terra_workflow: TerraWorkflow) -> dict:
-        """
-        Create the initial method using the WDL file in this repo.
-
-        :param terra_workflow: a `TerraWorkflow` instance
-        :return: the latest method's snapshot
-        """
-
-        terra_workflow.persist_method_on_github()
-        assert terra_workflow.persisted_wdl_script is not None
-
-        with tempfile.NamedTemporaryFile("w") as f:
-            f.write(terra_workflow.persisted_wdl_script["wdl"])
-            f.flush()
-
-            logging.info("Creating method")
-            snapshot = call_firecloud_api(
-                firecloud_api.update_repository_method,
-                namespace=terra_workflow.repo_namespace,
-                method=terra_workflow.repo_method_name,
-                synopsis=terra_workflow.method_synopsis,
-                wdl=f.name,
-            )
-
-        logging.info("Setting method ACL")
-        call_firecloud_api(
-            firecloud_api.update_repository_method_acl,
-            namespace=terra_workflow.repo_namespace,
-            method=terra_workflow.repo_method_name,
-            snapshot_id=snapshot["snapshotId"],
-            acl_updates=[{"user": x, "role": "OWNER"} for x in self.firecloud_owners],
-        )
-
-        return snapshot
-
-    def update_method(self, terra_workflow: TerraWorkflow) -> dict:
-        """
-        Update the Terra method using a WDL file in this repo.
-
-        :param terra_workflow: a `TerraWorkflow` instance
-        :return: the latest method's snapshot
-        """
-
-        # get contents of WDL uploaded to GCS
-        terra_workflow.persist_method_on_github()
-        assert terra_workflow.persisted_wdl_script is not None
-
-        with tempfile.NamedTemporaryFile("w") as f:
-            f.write(terra_workflow.persisted_wdl_script["wdl"])
-            f.flush()
-
-            logging.info("Updating method")
-            snapshot = call_firecloud_api(
-                firecloud_api.update_repository_method,
-                namespace=terra_workflow.repo_namespace,
-                method=terra_workflow.repo_method_name,
-                synopsis=terra_workflow.method_synopsis,
-                wdl=f.name,
-            )
-
-        logging.info("Setting method ACL")
-        call_firecloud_api(
-            firecloud_api.update_repository_method_acl,
-            namespace=terra_workflow.repo_namespace,
-            method=terra_workflow.repo_method_name,
-            snapshot_id=snapshot["snapshotId"],
-            acl_updates=[{"user": x, "role": "OWNER"} for x in self.firecloud_owners],
-        )
-
-        return snapshot
-
-    def update_workflow(self, terra_workflow: TerraWorkflow) -> None:
-        """
-        Update the Terra workflow (method and method config).
-
-        :param terra_workflow: a `TerraWorkflow` instance
-        """
-
-        snapshots = terra_workflow.get_method_snapshots()
-
-        # update or create the method for the current WDL file
-        if len(snapshots) == 0:
-            snapshot = self.create_method(terra_workflow)
-        else:
-            snapshot = self.update_method(terra_workflow)
-
-        # assocate the method config with the latest method version
-        terra_workflow.method_config["methodRepoMethod"]["methodVersion"] = snapshot[
-            "snapshotId"
-        ]
-
-        # inject the workflow version and URL into inputs so it gets stored in job
-        # submissions
-        assert terra_workflow.persisted_wdl_script is not None
-
-        if "version" in terra_workflow.persisted_wdl_script:
-            terra_workflow.method_config["inputs"][
-                f"{terra_workflow.repo_method_name}.workflow_version"
-            ] = f'"{terra_workflow.persisted_wdl_script["version"]}"'
-
-        terra_workflow.method_config["inputs"][
-            f"{terra_workflow.repo_method_name}.workflow_url"
-        ] = f'"{terra_workflow.persisted_wdl_script["public_url"]}"'
-
-        logging.info("Checking for existing workspace config")
-        res = firecloud_api.get_workspace_config(
-            namespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
-            config=terra_workflow.method_config_name,
-        )
-
-        # update or create the method config
-        if res.status_code == 404:
-            self.create_workspace_config(terra_workflow.method_config)
-        else:
-            self.update_workspace_config(terra_workflow, terra_workflow.method_config)
-
-        # don't let old method configs accumulate
-        terra_workflow.delete_old_method_snapshots(nkeep=20)
-
-    def submit_workflow_run(
-        self, terra_workflow: TerraWorkflow, **kwargs: Unpack[TerraJobSubmissionKwargs]
-    ) -> None:
-        """
-        Submit a run of a workflow.
-
-        :param terra_workflow: a `TerraWorkflow` instance
-        """
-
-        logging.info(f"Submitting {terra_workflow.repo_method_name} job")
-        call_firecloud_api(
-            firecloud_api.create_submission,
-            wnamespace=self.workspace_namespace,
-            workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
-            config=terra_workflow.repo_method_name,
-            **kwargs,
-        )
 
     def create_sample_set(self, sample_ids: Iterable[str], suffix: str) -> str:
         """
@@ -323,6 +130,128 @@ class TerraWorkspace:
         self.upload_entities(sample_sets)
 
         return sample_set_id
+
+    def create_method_config(self, config_body: dict) -> None:
+        """
+        Create a Terra method config.
+
+        :param config_body: a dictionary containing the method config
+        """
+
+        logging.info("Creating method config")
+        call_firecloud_api(
+            firecloud_api.create_workspace_config,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            body=config_body,
+        )
+
+        logging.info("Setting workspace config ACL")
+        call_firecloud_api(
+            firecloud_api.update_workspace_acl,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            acl_updates=[{"email": x, "accessLevel": "OWNER"} for x in self.owners],
+        )
+
+    def update_method_config(
+        self, terra_workflow: TerraWorkflow, config_body: dict
+    ) -> None:
+        """
+        Update a Terra method config.
+
+        :param terra_workflow: a `TerraWorkflow` instance
+        :param config_body: a dictionary containing the method config
+        """
+
+        logging.info("Update method config")
+        call_firecloud_api(
+            firecloud_api.update_workspace_config,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            cnamespace=terra_workflow.repo_namespace,
+            configname=terra_workflow.repo_method_name,
+            body=config_body,
+        )
+
+        logging.info("Setting workspace config ACL")
+        call_firecloud_api(
+            firecloud_api.update_workspace_acl,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            acl_updates=[{"email": x, "accessLevel": "OWNER"} for x in self.owners],
+        )
+
+    def update_workflow(
+        self, terra_workflow: TerraWorkflow, n_snapshots_to_keep: int = 20
+    ) -> None:
+        """
+        Update the Terra workflow (method and method config).
+
+        :param terra_workflow: a `TerraWorkflow` instance
+        :param n_snapshots_to_keep: the number of method snapshots to keep
+        """
+
+        # update or create the method
+        snapshot = terra_workflow.update_method(self.owners)
+
+        # assocate the method config with the latest method version
+        terra_workflow.method_config["methodRepoMethod"]["methodVersion"] = snapshot[
+            "snapshotId"
+        ]
+
+        # inject the workflow version and URL into inputs so they get stored in job
+        # submissions
+        assert terra_workflow.persisted_wdl_script is not None
+
+        if "version" in terra_workflow.persisted_wdl_script:
+            terra_workflow.method_config["inputs"][
+                f"{terra_workflow.repo_method_name}.workflow_version"
+            ] = f'"{terra_workflow.persisted_wdl_script["version"]}"'
+
+        terra_workflow.method_config["inputs"][
+            f"{terra_workflow.repo_method_name}.workflow_source_url"
+        ] = f'"{terra_workflow.persisted_wdl_script["public_url"]}"'
+
+        logging.info("Checking for existing method config")
+        # all of the `firecloud_api.*_workspace_config` methods are really operations on
+        # a method config, just inside a workspace
+        res = firecloud_api.get_workspace_config(
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            cnamespace=terra_workflow.repo_namespace,
+            config=terra_workflow.method_config_name,
+        )
+
+        # update or create the method config
+        if res.status_code == 404:
+            self.create_method_config(terra_workflow.method_config)
+        else:
+            self.update_method_config(terra_workflow, terra_workflow.method_config)
+
+        # don't let old method versions accumulate
+        terra_workflow.delete_old_method_snapshots(
+            n_snapshots_to_keep=n_snapshots_to_keep
+        )
+
+    def submit_workflow_run(
+        self, terra_workflow: TerraWorkflow, **kwargs: Unpack[TerraJobSubmissionKwargs]
+    ) -> None:
+        """
+        Submit a run of a workflow.
+
+        :param terra_workflow: a `TerraWorkflow` instance
+        """
+
+        logging.info(f"Submitting {terra_workflow.repo_method_name} job")
+        call_firecloud_api(
+            firecloud_api.create_submission,
+            wnamespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            cnamespace=terra_workflow.repo_namespace,
+            config=terra_workflow.repo_method_name,
+            **kwargs,
+        )
 
     def collect_workflow_outputs(
         self, since: datetime.datetime | None = None

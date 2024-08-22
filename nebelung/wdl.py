@@ -15,9 +15,10 @@ WORKFLOW_VERSION_PATTERN = re.compile(
 
 
 class GistedWdl:
-    def __init__(self, method_name: str, github_pat: str):
+    def __init__(self, method_name: str, github_pat: str, womtool_jar: str):
         self.method_name = method_name
         self.github_pat = github_pat
+        self.womtool_jar = womtool_jar
         self.gist = None
 
     def find_or_create_gist(self):
@@ -45,13 +46,12 @@ class GistedWdl:
         else:
             self.gist = matching_gists[0]
 
-    def persist_wdl_script(self, wdl_path: Path, subpath: str = "") -> PersistedWdl:
+    def persist_wdl_script(self, wdl_path: Path) -> PersistedWdl:
         """
         Save a copy of a local WDL script and its dependencies to GitHub, rewriting the
         import statements to refer to the public gist.github.com URLs.
 
         :param wdl_path: the absolute path to a WDL script
-        :param subpath: a prefix to prepend to the destiation URL
         :return: a dictionary of the uploaded WDL, its public URL, and its
         `pipeline_version` (if found as a variable in the `workflow`)
         """
@@ -60,17 +60,8 @@ class GistedWdl:
             wdl_lines = f.readlines()
 
         wdl_basename = os.path.basename(wdl_path)
-        version = None
-        versioned_subpath = subpath
-        buffer = []
-
-        # include the version number on the uploaded object path if one is found
-        for line in wdl_lines:
-            if version_match := re.match(WORKFLOW_VERSION_PATTERN, line):
-                version = version_match[1]
-                versioned_subpath = "/".join(
-                    [versioned_subpath, Path(wdl_basename).stem, version]
-                )
+        workflow_version = None
+        buffer = []  # build buffer of lines in the WDL file
 
         for line in wdl_lines:
             if import_match := re.match(IMPORT_PATTERN, line):
@@ -83,21 +74,21 @@ class GistedWdl:
                 # absolute path to the dependent file
                 abs_wdl_path = Path.joinpath(wdl_path.parent.absolute(), rel_path)
 
-                # append the local relative path to the end of parent's prefix
-                imported_versioned_subpath = "/".join(
-                    [versioned_subpath, Path(rel_path).parent.name]
-                )
-
                 # recurse: upload the dependent WDL and get its URL
-                imported_public_url = self.persist_wdl_script(
-                    abs_wdl_path, imported_versioned_subpath
-                )["public_url"]
+                imported_public_url = self.persist_wdl_script(abs_wdl_path)[
+                    "public_url"
+                ]
 
                 # replace the local relative import with the absolute one
                 converted_line = f'import "{imported_public_url}" as {import_alias}'
                 buffer.append(converted_line)
 
             else:
+                if version_match := re.match(WORKFLOW_VERSION_PATTERN, line):
+                    # return to caller for possible use as a workflow input
+                    workflow_version = version_match[1]
+
+                # keep writing to buffer
                 buffer.append(line.rstrip())
 
         # construct the final version of this WDL script
@@ -109,7 +100,7 @@ class GistedWdl:
             f.flush()
 
             res = subprocess.run(
-                ["java", "-jar", os.environ["WOMTOOL_JAR"], "validate", f.name],
+                ["java", "-jar", self.womtool_jar, "validate", f.name],
                 capture_output=True,
             )
 
@@ -129,7 +120,11 @@ class GistedWdl:
         )
 
         # return the public URL of the new version of the WDL script so that it can be
-        # imported by its parent (if there is one)
+        # imported by its parent (if there is one) or used by the calling function
         raw_url = self.gist.files[wdl_basename].raw_data["raw_url"]
 
-        return {"wdl": converted_wdl, "public_url": raw_url, "version": version}
+        return {
+            "wdl": converted_wdl,
+            "public_url": raw_url,
+            "version": workflow_version,
+        }

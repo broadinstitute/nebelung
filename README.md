@@ -131,6 +131,8 @@ To avoid persisting potentially invalid WDL, `update_workflow` also validates al
 
 ### Example
 
+See also the [example module](example/) module in this repo.
+
 ```python
 import os
 from pathlib import Path

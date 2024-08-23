@@ -10,7 +10,7 @@ This package provides a wrapper around the [Firecloud](https://pypi.org/project/
 Nebelung requires Python 3.11 or later.
 
 ```shell
-poetry add nebelung
+poetry add nebelung # or pip install nebelung
 ```
 
 # Usage
@@ -131,7 +131,7 @@ To avoid persisting potentially invalid WDL, `update_workflow` also validates al
 
 ### Example
 
-See also the [example module](example/) module in this repo.
+See also the [example module](https://github.com/broadinstitute/nebelung/tree/main/example) module in this repo.
 
 ```python
 import os

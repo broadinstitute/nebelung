@@ -15,14 +15,14 @@ To test Nebelung's functionality in a new Terra workspace:
 
 ```shell
 # 1. create a sample data table with a single sample
-poetry run python -m example upload_entities
+python -m example upload_entities
 # confirm the workspace has a `sample` data table with a single row
 
 # 2. create/update the hello_world workflow (method and method config) 
-poetry run python -m example update_workflow
+python -m example update_workflow
 # confirm the workspace has a `hello_world` workflow with an imported GitHub gist file
 
 # 3. run the workflow on a new sample set comprising the one sample
-poetry run python -m example run_workflow
+python -m example run_workflow
 # confirm the job succeeded and a `result` column is added to the `sample` data table
 ```

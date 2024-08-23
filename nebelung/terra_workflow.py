@@ -77,14 +77,6 @@ class TerraWorkflow:
         self.persist_method_on_github()
         assert self.persisted_wdl_script is not None
 
-        logging.info("Setting method repository config ACL")
-        # the firecloud package doesn't have a wrapper for this endpoint
-        call_firecloud_api(
-            firecloud_post,
-            methcall=f"configurations/{self.repo_namespace}/permissions",
-            json=[{"user": x, "role": "OWNER"} for x in owners],
-        )
-
         with tempfile.NamedTemporaryFile("w") as f:
             f.write(self.persisted_wdl_script["wdl"])
             f.flush()
@@ -105,6 +97,14 @@ class TerraWorkflow:
             method=self.repo_method_name,
             snapshot_id=snapshot["snapshotId"],
             acl_updates=[{"user": x, "role": "OWNER"} for x in owners],
+        )
+
+        logging.info("Setting method repository config ACL")
+        # the firecloud package doesn't have a wrapper for this endpoint
+        call_firecloud_api(
+            firecloud_post,
+            methcall=f"configurations/{self.repo_namespace}/permissions",
+            json=[{"user": x, "role": "OWNER"} for x in owners],
         )
 
         return snapshot

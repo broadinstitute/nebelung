@@ -1,0 +1,18 @@
+{
+  "deleted": false,
+  "inputs": {
+    "hello_world.sample_id": "this.sample_id"
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodNamespace": "my_group",
+    "methodName": "hello_world",
+    "methodVersion": 1
+  },
+  "namespace": "my_group",
+  "name": "hello_world",
+  "outputs": {
+    "hello_world.result": "this.result"
+  },
+  "rootEntityType": "sample"
+}

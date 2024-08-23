@@ -106,7 +106,7 @@ class GistedWdl:
 
             if res.returncode != 0 or "Success" not in res.stdout.decode():
                 raise ChildProcessError(
-                    f"Error validating WDL script: {res.stderr.decode()}"
+                    f"Error validating {wdl_path}: {res.stderr.decode()}"
                 )
 
         # update the gist with the new version of the WDL script

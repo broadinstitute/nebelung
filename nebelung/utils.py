@@ -110,6 +110,7 @@ def type_data_frame(
 
 def expand_dict_columns(
     df: pd.DataFrame,
+    except_cols: list[str] | None = None,
     sep: str = "__",
     name_columns_with_parent: bool = True,
     parent_key: str = "",
@@ -120,6 +121,7 @@ def expand_dict_columns(
     columns.
 
     :param df: a data frame
+    :param except_cols: an optional list of columns to exclude from expansion
     :param sep: a separator character to use between `parent_key` and its column names
     :param name_columns_with_parent: whether to "namespace" nested column names using
     their parents' column names
@@ -129,13 +131,23 @@ def expand_dict_columns(
     :return: a widened data frame
     """
 
+    if except_cols is None:
+        except_cols = []
+
     flattened_dict = {}
 
+    # iterate as (column, series) tuples
     for c, s in df.items():
+        # get the index of the first non-NA value in this series (if there is one)
         fvi = s.first_valid_index()
 
-        if fvi is not None and isinstance(s.loc[fvi], dict):
-            # if the column contains dictionaries, recursively flatten them
+        # check if that first non-NA value is a dict and the column is expandable
+        if (
+            str(c) not in except_cols
+            and fvi is not None
+            and isinstance(s.loc[fvi], dict)
+        ):
+            # recursively flatten this dictionary column
             nested_df = pd.json_normalize(s.tolist())
             nested_df.index = df.index
 
@@ -162,6 +174,7 @@ def expand_dict_columns(
             flattened_dict.update(
                 expand_dict_columns(
                     nested_df,
+                    except_cols=except_cols,
                     sep=sep,
                     name_columns_with_parent=name_columns_with_parent,
                     parent_key=col_name_formatter(str(c)),

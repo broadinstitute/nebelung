@@ -85,27 +85,37 @@ class TerraWorkspace:
                     model="flexible",
                 )
 
-    def create_sample_set(self, sample_ids: Iterable[str], suffix: str) -> str:
+    def create_sample_set(
+        self,
+        sample_ids: Iterable[str],
+        sample_set_id: str | None = None,
+        suffix: str | None = None,
+    ) -> str:
         """
         Create a new sample set for a list of sample IDs and upload it to Terra.
 
         :param sample_ids: a list of sample IDs
-        :param suffix: a suffix to add to the sample set ID (e.g.
-        "preprocess_wgs_sample")
+        :param sample_set_id: an ID for the new sample set
+        :param suffix: a suffix to add to an auto-generated, timestamped, sample set ID
         :return: the ID of the new sample set
         """
 
-        # make an ID for the sample set of new samples
-        sample_set_id = "_".join(
-            [
-                "samples",
-                datetime.datetime.now(datetime.UTC)
-                .isoformat(timespec="seconds")
-                .rstrip("+00:00")
-                .replace(":", "-"),
-                suffix,
-            ]
-        )
+        if sample_set_id is None:
+            assert (
+                suffix is not None
+            ), "suffix is required if you don't specify a sample set ID"
+
+            # generate an ID for the sample set of new samples
+            sample_set_id = "_".join(
+                [
+                    "samples",
+                    datetime.datetime.now(datetime.UTC)
+                    .isoformat(timespec="seconds")
+                    .rstrip("+00:00")
+                    .replace(":", "-"),
+                    suffix,
+                ]
+            )
 
         # construct a data frame of sample IDs for this sample set
         sample_sets = pd.DataFrame({"entity:sample_id": sample_ids}, dtype="string")

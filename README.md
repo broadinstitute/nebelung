@@ -40,7 +40,7 @@ df = terra_workspace.get_entities("sample")
 df = terra_workspace.get_entities("sample", YourPanderaSchema)   
 
 # upsert a data frame to a workspace data table
-terra_workspace.upload_entities(df)  # first column of `df` should be, e.g., `sample_id` 
+terra_workspace.upload_entities(df)  # first column of `df` should be, e.g., `entity:sample_id` 
 
 # create a sample set named, e.g., `samples_2024-08-21T17-24-19_call_cnvs"
 sample_set_id = terra_workspace.create_sample_set(
@@ -115,7 +115,7 @@ version 1.0
 
 workflow call_cnvs {
     input {
-        String workflow_version = "1.0" # internal semver not tied to WARP releases
+        String workflow_version = "1.0" # internal version number for your use
         String workflow_source_url # populated automatically with URL of this script
     }
 }

@@ -148,7 +148,7 @@ def expand_dict_columns(
             and isinstance(s.loc[fvi], dict)
         ):
             # recursively flatten this dictionary column
-            nested_df = pd.json_normalize(s.tolist())
+            nested_df = pd.json_normalize(s.tolist(), sep=sep)
             nested_df.index = df.index
 
             if name_columns_with_parent:

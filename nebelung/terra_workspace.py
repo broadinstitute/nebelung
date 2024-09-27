@@ -85,30 +85,34 @@ class TerraWorkspace:
                     model="flexible",
                 )
 
-    def create_sample_set(
+    def create_entity_set(
         self,
-        sample_ids: Iterable[str],
-        sample_set_id: str | None = None,
+        entity_type: str,
+        entity_ids: Iterable[str],
+        entity_set_id: str | None = None,
         suffix: str | None = None,
     ) -> str:
         """
-        Create a new sample set for a list of sample IDs and upload it to Terra.
+        Create a new entity set for a list of entity IDs and upload it to Terra.
 
-        :param sample_ids: a list of sample IDs
-        :param sample_set_id: an ID for the new sample set
-        :param suffix: a suffix to add to an auto-generated, timestamped, sample set ID
-        :return: the ID of the new sample set
+        :param entity_type: the kind of entity (e.g. "sample")
+        :param entity_ids: a list of entity IDs
+        :param entity_set_id: an optional ID for the new entity set (if `suffix` isn't
+        provided)
+        :param suffix: a suffix to add to an auto-generated, timestamped, entity set ID
+        (if `entity_set_id` isn't provided)
+        :return: the ID of the new entity set
         """
 
-        if sample_set_id is None:
+        if entity_set_id is None:
             assert (
                 suffix is not None
-            ), "suffix is required if you don't specify a sample set ID"
+            ), "suffix is required if you don't specify a entity set ID"
 
-            # generate an ID for the sample set of new samples
-            sample_set_id = "_".join(
+            # generate an ID for the entity set of new entities
+            entity_set_id = "_".join(
                 [
-                    "samples",
+                    entity_type,
                     datetime.datetime.now(datetime.UTC)
                     .isoformat(timespec="seconds")
                     .rstrip("+00:00")
@@ -117,29 +121,41 @@ class TerraWorkspace:
                 ]
             )
 
-        # construct a data frame of sample IDs for this sample set
-        sample_sets = pd.DataFrame({"entity:sample_id": sample_ids}, dtype="string")
-        sample_sets["entity:sample_set_id"] = sample_set_id
+        elif suffix is not None:
+            logging.warning(
+                "An entity_set_id was provided, so the suffix option is ignored"
+            )
 
-        logging.info("Creating new sample set in Terra")
+        # construct a data frame of entity IDs for this entity set
+        entity_set = pd.DataFrame(
+            {f"entity:{entity_ids}_id": entity_ids}, dtype="string"
+        )
+        entity_set[f"entity:{entity_type}_set_id"] = entity_set_id
+
+        logging.info(f"Creating new {entity_set} set in Terra")
         self.upload_entities(
-            sample_sets.loc[:, ["entity:sample_set_id"]].drop_duplicates()
+            entity_set.loc[:, [f"entity:{entity_type}_set_id"]].drop_duplicates()
         )
 
-        # construct the join table between the sample set and its samples
-        sample_sets = sample_sets.rename(
+        # construct the join/membership table between the entity set and its entities
+        entity_set = entity_set.rename(
             columns={
-                "entity:sample_set_id": "membership:sample_set_id",
-                "entity:sample_id": "sample",
+                f"entity:{entity_type}_set_id": f"membership:{entity_type}_set_id",
+                f"entity:{entity_ids}_id": entity_type,
             }
         )
 
-        sample_sets = sample_sets.loc[:, ["membership:sample_set_id", "sample"]]
+        entity_set = entity_set.loc[
+            :, [f"membership:{entity_type}_set_id", entity_type]
+        ]
 
-        logging.info(f"Adding {len(sample_sets)} samples to sample set {sample_set_id}")
-        self.upload_entities(sample_sets)
+        logging.info(
+            f"Adding {len(entity_set)} {entity_type} entities "
+            f"to {entity_type} set {entity_set_id}"
+        )
+        self.upload_entities(entity_set)
 
-        return sample_set_id
+        return entity_set_id
 
     def create_method_config(self, config_body: dict) -> None:
         """

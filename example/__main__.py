@@ -45,7 +45,9 @@ if __name__ == "__main__":
         terra_workspace.update_workflow(terra_workflow, n_snapshots_to_keep=5)
 
     elif args.step == "run_workflow":
-        sample_set_id = terra_workspace.create_sample_set(["a"], suffix="hello_world")
+        sample_set_id = terra_workspace.create_entity_set(
+            entity_type="sample", entity_ids=["a"], suffix="hello_world"
+        )
 
         terra_workspace.submit_workflow_run(
             terra_workflow,

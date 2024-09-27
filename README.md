@@ -42,9 +42,10 @@ df = terra_workspace.get_entities("sample", YourPanderaSchema)
 # upsert a data frame to a workspace data table
 terra_workspace.upload_entities(df)  # first column of `df` should be, e.g., `entity:sample_id` 
 
-# create a sample set named, e.g., `samples_2024-08-21T17-24-19_call_cnvs"
-sample_set_id = terra_workspace.create_sample_set(
-    ["sample_id1", "sample_id2"], 
+# create a sample set named, e.g., `sample_2024-08-21T17-24-19_call_cnvs"
+sample_set_id = terra_workspace.create_entity_set(
+    entity_type="sample",
+    entity_ids=["sample_id1", "sample_id2"], 
     suffix="call_cnvs",
 )
 ```
@@ -164,7 +165,7 @@ terra_workspace.update_workflow(terra_workflow, n_snapshots_to_keep=20)
 terra_workspace.submit_workflow_run(
     terra_workflow,
     # any arguments below are passed to `firecloud_api.create_submission`
-    entity="samples_2024-08-21T17-24-19_call_cnvs", # from `create_sample_set`
+    entity="sample_2024-08-21T17-24-19_call_cnvs", # from `create_entity_set`
     etype="sample_set", # data type of the `entity` arg
     expression="this.samples", # the root entity (i.e. the WDL expects a single sample)
     use_callcache=True,

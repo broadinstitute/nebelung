@@ -77,7 +77,7 @@ class TerraWorkspace:
                 f.flush()
 
                 logging.info(f"Upserting {len(batch)} entities to Terra")
-                call_firecloud_api(
+                _ = call_firecloud_api(
                     firecloud_api.upload_entities_tsv,
                     namespace=self.workspace_namespace,
                     workspace=self.workspace_name,

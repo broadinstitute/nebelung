@@ -77,7 +77,7 @@ class TerraWorkspace:
                 f.flush()
 
                 logging.info(f"Upserting {len(batch)} entities to Terra")
-                _ = call_firecloud_api(
+                call_firecloud_api(
                     firecloud_api.upload_entities_tsv,
                     namespace=self.workspace_namespace,
                     workspace=self.workspace_name,
@@ -132,7 +132,7 @@ class TerraWorkspace:
         )
         entity_set[f"entity:{entity_type}_set_id"] = entity_set_id
 
-        logging.info(f"Creating new {entity_set} set in Terra")
+        logging.info(f"Creating new {entity_type} set in Terra")
         self.upload_entities(
             entity_set.loc[:, [f"entity:{entity_type}_set_id"]].drop_duplicates()
         )

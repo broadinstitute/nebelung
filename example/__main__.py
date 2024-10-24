@@ -25,8 +25,9 @@ if __name__ == "__main__":
     )
 
     terra_workflow = TerraWorkflow(
-        repo_namespace="my_group",
-        repo_method_name="hello_world",
+        method_namespace="my_group",
+        method_name="hello_world",
+        method_config_namespace="my_group",
         method_config_name="hello_world",
         method_synopsis="Trivial workflow",
         workflow_wdl_path=Path(

@@ -195,8 +195,8 @@ class TerraWorkspace:
             firecloud_api.update_workspace_config,
             namespace=self.workspace_namespace,
             workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
-            configname=terra_workflow.repo_method_name,
+            cnamespace=terra_workflow.method_config_namespace,
+            configname=terra_workflow.method_config_name,
             body=config_body,
         )
 
@@ -232,11 +232,11 @@ class TerraWorkspace:
 
         if "version" in terra_workflow.persisted_wdl_script:
             terra_workflow.method_config["inputs"][
-                f"{terra_workflow.repo_method_name}.workflow_version"
+                f"{terra_workflow.method_name}.workflow_version"
             ] = f'"{terra_workflow.persisted_wdl_script["version"]}"'
 
         terra_workflow.method_config["inputs"][
-            f"{terra_workflow.repo_method_name}.workflow_source_url"
+            f"{terra_workflow.method_name}.workflow_source_url"
         ] = f'"{terra_workflow.persisted_wdl_script["public_url"]}"'
 
         logging.info("Checking for existing method config")
@@ -245,7 +245,7 @@ class TerraWorkspace:
         res = firecloud_api.get_workspace_config(
             namespace=self.workspace_namespace,
             workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
+            cnamespace=terra_workflow.method_config_namespace,
             config=terra_workflow.method_config_name,
         )
 
@@ -269,13 +269,13 @@ class TerraWorkspace:
         :param terra_workflow: a `TerraWorkflow` instance
         """
 
-        logging.info(f"Submitting {terra_workflow.repo_method_name} job")
+        logging.info(f"Submitting {terra_workflow.method_name} job")
         call_firecloud_api(
             firecloud_api.create_submission,
             wnamespace=self.workspace_namespace,
             workspace=self.workspace_name,
-            cnamespace=terra_workflow.repo_namespace,
-            config=terra_workflow.repo_method_name,
+            cnamespace=terra_workflow.method_config_namespace,
+            config=terra_workflow.method_config_name,
             **kwargs,
         )
 
@@ -388,7 +388,7 @@ class TerraWorkspace:
                 # iterate through the outputs and make a `task_result` object for each
                 for label, output in wmd["outputs"].items():
                     # all attributes up to now have been invariant between outputs
-                    o = base_o.copy()
+                    o = base_o.model_copy()
 
                     # the workflow outputs are named like `workflow_name.output_name`
                     o.label = label.rsplit(".", maxsplit=1)[-1]

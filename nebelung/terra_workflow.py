@@ -15,8 +15,9 @@ from nebelung.wdl import GistedWdl
 class TerraWorkflow:
     def __init__(
         self,
-        repo_namespace: str,
-        repo_method_name: str,
+        method_namespace: str,
+        method_name: str,
+        method_config_namespace: str,
         method_config_name: str,
         method_synopsis: str,
         workflow_wdl_path: Path,
@@ -24,8 +25,9 @@ class TerraWorkflow:
         github_pat: str | None = None,
         womtool_jar: str | None = None,
     ) -> None:
-        self.repo_namespace = repo_namespace
-        self.repo_method_name = repo_method_name
+        self.method_namespace = method_namespace
+        self.method_name = method_name
+        self.method_config_namespace = method_config_namespace
         self.method_config_name = method_config_name
         self.method_synopsis = method_synopsis
         self.workflow_wdl_path = workflow_wdl_path
@@ -57,7 +59,7 @@ class TerraWorkflow:
         if self.persisted_wdl_script is None:
             logging.info(f"Persisting {self.workflow_wdl_path} on GitHub")
             gisted_wdl = GistedWdl(
-                method_name=self.repo_method_name,
+                method_name=self.method_name,
                 github_pat=self.github_pat,
                 womtool_jar=self.womtool_jar,
             )
@@ -84,8 +86,8 @@ class TerraWorkflow:
             logging.info("Updating method")
             snapshot = call_firecloud_api(
                 firecloud_api.update_repository_method,
-                namespace=self.repo_namespace,
-                method=self.repo_method_name,
+                namespace=self.method_namespace,
+                method=self.method_name,
                 synopsis=self.method_synopsis,
                 wdl=f.name,
             )
@@ -93,8 +95,8 @@ class TerraWorkflow:
         logging.info("Setting method ACL")
         call_firecloud_api(
             firecloud_api.update_repository_method_acl,
-            namespace=self.repo_namespace,
-            method=self.repo_method_name,
+            namespace=self.method_namespace,
+            method=self.method_name,
             snapshot_id=snapshot["snapshotId"],
             acl_updates=[{"user": x, "role": "OWNER"} for x in owners],
         )
@@ -103,7 +105,7 @@ class TerraWorkflow:
         # the firecloud package doesn't have a wrapper for this endpoint
         call_firecloud_api(
             firecloud_post,
-            methcall=f"configurations/{self.repo_namespace}/permissions",
+            methcall=f"configurations/{self.method_namespace}/permissions",
             json=[{"user": x, "role": "OWNER"} for x in owners],
         )
 
@@ -116,11 +118,11 @@ class TerraWorkflow:
         :return: list of snapshot information, most recent first
         """
 
-        logging.info(f"Getting {self.repo_method_name} method snapshots")
+        logging.info(f"Getting {self.method_name} method snapshots")
         snapshots = call_firecloud_api(
             firecloud_api.list_repository_methods,
-            namespace=self.repo_namespace,
-            name=self.repo_method_name,
+            namespace=self.method_namespace,
+            name=self.method_name,
         )
 
         snapshots.sort(key=lambda x: x["snapshotId"], reverse=True)
@@ -141,7 +143,7 @@ class TerraWorkflow:
         for x in to_delete:
             call_firecloud_api(
                 firecloud_api.delete_repository_method,
-                namespace=self.repo_namespace,
-                name=self.repo_method_name,
+                namespace=self.method_namespace,
+                name=self.method_name,
                 snapshot_id=x["snapshotId"],
             )

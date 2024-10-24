@@ -148,8 +148,9 @@ os.environ["WOMTOOL_JAR"] = "/path/to/womtool.jar"
 os.environ["GITHUB_PAT"] = "github_pat_..."
 
 terra_workflow = TerraWorkflow(
-    repo_namespace="omics_pipelines", # should match `methodRepoMethod` from method config
-    repo_method_name="call_cnvs", # should match `methodRepoMethod` from method config
+    method_namespace="omics_pipelines", # should match `methodRepoMethod.methodNamespace` from method config
+    method_name="call_cnvs", # should match `methodRepoMethod.name` from method config
+    method_config_namespace="omics_pipelines", # should match `namespace` from method config
     method_config_name="call_cnvs", # should match `name` from method config
     method_synopsis="This method calls CNVs.",
     workflow_wdl_path=Path("/path/to/call_cnvs.wdl").resolve(),

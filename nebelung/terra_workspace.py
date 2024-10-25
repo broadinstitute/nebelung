@@ -10,6 +10,8 @@ from firecloud import api as firecloud_api
 from nebelung.terra_workflow import TerraWorkflow
 from nebelung.types import (
     PanderaBaseSchema,
+    SubmittableEntities,
+    SubmittedEntities,
     TaskResult,
     TerraJobSubmissionKwargs,
     TypedDataFrame,
@@ -260,6 +262,134 @@ class TerraWorkspace:
             n_snapshots_to_keep=n_snapshots_to_keep
         )
 
+    def check_submittable_entities(
+        self,
+        entity_type: str,
+        entity_ids: Iterable[str],
+        terra_workflow: TerraWorkflow,
+        since: datetime.datetime | None = None,
+        resubmit_n_times: int = 0,
+        force_retry: bool = False,
+    ) -> SubmittableEntities:
+        """
+        Filter a list of entity IDs to those that aren't part of an active job for
+        `terra_workflow` and are either unsubmitted or could be resubmitted according to
+        the other arguments.
+
+        :param entity_type: the kind of entity (e.g. "sample")
+        :param entity_ids: a list of entity IDs
+        :param terra_workflow: a workflow to potentially create a job for
+        :param since: don't collect job submissions before this `datetime`
+        :param resubmit_n_times: the number of times to resubmit a failed entity to a
+        job
+        :param force_retry: allow resubmission even if an entity has failed more than
+        `resubmit_n_times` for that workflow
+        """
+
+        # get all submissions in the workspace
+        submissions = pd.DataFrame(
+            call_firecloud_api(
+                firecloud_api.list_submissions,
+                namespace=self.workspace_namespace,
+                workspace=self.workspace_name,
+            )
+        ).convert_dtypes()
+
+        # filter submissions to those for the TerraWorkflow of interest
+        subs_for_workflow = submissions.loc[
+            submissions["methodConfigurationNamespace"].eq(
+                terra_workflow.method_config_namespace
+            )
+            & submissions["methodConfigurationName"].str.startswith(
+                terra_workflow.method_config_name
+            ),  # Terra appends a random string to the method config used in a job
+            ["submissionDate", "submissionId"],
+        ]
+
+        subs_for_workflow["submissionDate"] = pd.to_datetime(
+            subs_for_workflow["submissionDate"]
+        )
+
+        if since is not None:
+            # the list of submissions can grow very long and the endpoint doesn't
+            # support filtering
+            subs_for_workflow = subs_for_workflow.loc[
+                subs_for_workflow["submissionDate"].ge(pd.Timestamp(since, tz="UTC"))
+            ]
+
+        # collect the entities submitted as part of this job and their status
+        submitted_entities = []
+
+        for sid in subs_for_workflow["submissionId"]:
+            submission = call_firecloud_api(
+                firecloud_api.get_submission,
+                namespace=self.workspace_namespace,
+                workspace=self.workspace_name,
+                submission_id=sid,
+            )
+
+            for w in submission["workflows"]:
+                if "workflowEntity" not in w:
+                    # this workflow didn't manage to start
+                    continue
+
+                submitted_entities.append(
+                    {
+                        "entity_type": w["workflowEntity"]["entityType"],
+                        "entity_id": w["workflowEntity"]["entityName"],
+                        "status": w["status"],
+                    }
+                )
+
+        # make data frame of previously submitted entities
+        sub_ent_df = type_data_frame(
+            pd.DataFrame(submitted_entities), SubmittedEntities
+        )
+
+        sub_ent_df = sub_ent_df.loc[
+            sub_ent_df["entity_type"].eq(entity_type)
+            & sub_ent_df["entity_id"].isin(list(entity_ids))
+        ]
+
+        # count number of failures per entity
+        failure_counts = (
+            sub_ent_df.loc[sub_ent_df["status"].eq("Failed"), "entity_id"]
+            .value_counts()
+            .reset_index()
+        )
+
+        if force_retry:
+            # we aren't returning counts, so just zero them out to simplify logic
+            failure_counts["count"] = 0
+
+        return {
+            # if an input entity ID isn't in the history, it hasn't been submitted yet
+            "unsubmitted": set(
+                [x for x in entity_ids if x not in sub_ent_df["entity_id"]]
+            ),
+            # a running entity might have state 'Queued', 'Submitted', 'Launching',
+            # 'Running', or anything that's not one of the below
+            "running": set(
+                sub_ent_df.loc[
+                    ~sub_ent_df["status"].isin(
+                        ["Aborted", "Aborting", "Succeeded", "Failed"]
+                    ),
+                    "entity_id",
+                ]
+            ),
+            # failed tasks are potentially retryable based on above logic
+            "retryable": set(
+                failure_counts.loc[
+                    failure_counts["count"].le(resubmit_n_times), "entity_id"
+                ]
+            ),
+            "failed": set(
+                failure_counts.loc[
+                    failure_counts["count"].gt(resubmit_n_times), "entity_id"
+                ]
+            ),
+        }
+
     def submit_workflow_run(
         self, terra_workflow: TerraWorkflow, **kwargs: Unpack[TerraJobSubmissionKwargs]
     ) -> None:
@@ -300,10 +430,14 @@ class TerraWorkspace:
 
         submissions = expand_dict_columns(submissions).convert_dtypes()
 
+        submissions["submissionDate"] = pd.to_datetime(submissions["submissionDate"])
+
         if since is not None:
             # the list of submissions can grow very long and the endpoint doesn't
             # support filtering
-            submissions = submissions.loc[submissions["submissionDate"].ge(since)]
+            submissions = submissions.loc[
+                submissions["submissionDate"].ge(pd.Timestamp(since, tz="UTC"))
+            ]
 
         # only collect outputs from submissions with successful workflow runs
         submissions = submissions.loc[submissions["workflowStatuses__Succeeded"].gt(0)]
@@ -343,13 +477,11 @@ class TerraWorkspace:
 
                 wid = w["workflowId"]
                 base_o.terra_workflow_id = wid
-
-                if "workflowEntity" in w:
-                    base_o.terra_entity_name = w["workflowEntity"]["entityName"]
-                    base_o.terra_entity_type = w["workflowEntity"]["entityType"]
+                base_o.terra_entity_name = w["workflowEntity"]["entityName"]
+                base_o.terra_entity_type = w["workflowEntity"]["entityType"]
 
                 base_o.completed_at = pd.Timestamp(
-                    ts_input=w["statusLastChangedDate"]
+                    ts_input=w["statusLastChangedDate"], tz="UTC"
                 ).isoformat()  # pyright: ignore
 
                 logging.info(f"Getting workflow {wid} metadata")

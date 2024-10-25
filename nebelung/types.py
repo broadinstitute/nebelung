@@ -1,8 +1,10 @@
 from typing import Any, NotRequired, Optional, TypedDict, TypeVar
 
+import pandas as pd
 import pandera as pa
 import pandera.typing
 from pandera.api.pandas.model_config import BaseConfig as PaBaseConfig
+from pandera.typing import Series
 from pydantic import BaseModel
 
 
@@ -10,6 +12,13 @@ class PersistedWdl(TypedDict):
     wdl: str
     public_url: str
     version: NotRequired[str | None]
+
+
+class SubmittableEntities(TypedDict):
+    unsubmitted: set[str]
+    running: set[str]
+    retryable: set[str]
+    failed: set[str]
 
 
 class TerraJobSubmissionKwargs(TypedDict):
@@ -53,6 +62,23 @@ class TaskResult(BaseModel):
 class CoercedDataFrame(pa.DataFrameModel):
     class Config(PaBaseConfig):
         coerce = True  # convert to indicated dtype upon TypedDataFrame init
+
+
+class SubmittedEntities(CoercedDataFrame):
+    entity_type: Series[pd.StringDtype]
+    entity_id: Series[pd.StringDtype]
+    status: Series[pd.StringDtype] = pa.Field(
+        isin={
+            "Queued",
+            "Submitted",
+            "Launching",
+            "Running",
+            "Aborted",
+            "Aborting",
+            "Succeeded",
+            "Failed",
+        }
+    )
 
 
 PanderaBaseSchema = TypeVar("PanderaBaseSchema", bound=CoercedDataFrame)

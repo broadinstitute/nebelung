@@ -6,6 +6,7 @@ from typing import Iterable, Type, Unpack
 
 import pandas as pd
 from firecloud import api as firecloud_api
+from pd_flatten import pd_flatten
 
 from nebelung.terra_workflow import TerraWorkflow
 from nebelung.types import (
@@ -16,12 +17,7 @@ from nebelung.types import (
     TerraJobSubmissionKwargs,
     TypedDataFrame,
 )
-from nebelung.utils import (
-    batch_evenly,
-    call_firecloud_api,
-    expand_dict_columns,
-    type_data_frame,
-)
+from nebelung.utils import batch_evenly, call_firecloud_api, type_data_frame
 
 
 class TerraWorkspace:
@@ -428,7 +424,7 @@ class TerraWorkspace:
             )
         ).convert_dtypes()
 
-        submissions = expand_dict_columns(submissions).convert_dtypes()
+        submissions = pd_flatten(submissions).convert_dtypes()
 
         submissions["submissionDate"] = pd.to_datetime(submissions["submissionDate"])
 

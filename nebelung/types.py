@@ -68,7 +68,7 @@ class SubmittedEntities(CoercedDataFrame):
     entity_type: Series[pd.StringDtype]
     entity_id: Series[pd.StringDtype]
     status: Series[pd.StringDtype] = pa.Field(
-        isin={
+        isin=[
             "Queued",
             "Submitted",
             "Launching",
@@ -77,7 +77,7 @@ class SubmittedEntities(CoercedDataFrame):
             "Aborting",
             "Succeeded",
             "Failed",
-        }
+        ]
     )
 
 

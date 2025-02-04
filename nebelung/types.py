@@ -64,6 +64,20 @@ class CoercedDataFrame(pa.DataFrameModel):
         coerce = True  # convert to indicated dtype upon TypedDataFrame init
 
 
+class Submissions(CoercedDataFrame):
+    deleteIntermediateOutputFiles: Series[pd.BooleanDtype]
+    methodConfigurationDeleted: Series[pd.BooleanDtype]
+    methodConfigurationName: Series[pd.StringDtype]
+    methodConfigurationNamespace: Series[pd.StringDtype]
+    status: Series[pd.StringDtype]
+    submissionDate: Series[pd.Timestamp]
+    submissionId: Series[pd.StringDtype]
+    submissionRoot: Series[pd.StringDtype]
+    submitter: Series[pd.StringDtype]
+    useCallCache: Series[pd.BooleanDtype]
+    userComment: Series[pd.StringDtype] = pa.Field(nullable=True)
+
+
 class SubmittedEntities(CoercedDataFrame):
     entity_type: Series[pd.StringDtype]
     entity_id: Series[pd.StringDtype]

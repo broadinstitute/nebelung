@@ -11,6 +11,7 @@ from pd_flatten import pd_flatten
 from nebelung.terra_workflow import TerraWorkflow
 from nebelung.types import (
     PanderaBaseSchema,
+    Submissions,
     SubmittableEntities,
     SubmittedEntities,
     TaskResult,
@@ -283,13 +284,16 @@ class TerraWorkspace:
         """
 
         # get all submissions in the workspace
-        submissions = pd.DataFrame(
-            call_firecloud_api(
-                firecloud_api.list_submissions,
-                namespace=self.workspace_namespace,
-                workspace=self.workspace_name,
-            )
-        ).convert_dtypes()
+        submissions = type_data_frame(
+            pd.DataFrame(
+                call_firecloud_api(
+                    firecloud_api.list_submissions,
+                    namespace=self.workspace_namespace,
+                    workspace=self.workspace_name,
+                )
+            ),
+            Submissions,
+        )
 
         # filter submissions to those for the TerraWorkflow of interest
         subs_for_workflow = submissions.loc[
@@ -416,13 +420,16 @@ class TerraWorkspace:
         """
 
         logging.info("Getting previous job submissions")
-        submissions = pd.DataFrame(
-            call_firecloud_api(
-                firecloud_api.list_submissions,
-                namespace=self.workspace_namespace,
-                workspace=self.workspace_name,
-            )
-        ).convert_dtypes()
+        submissions = type_data_frame(
+            pd.DataFrame(
+                call_firecloud_api(
+                    firecloud_api.list_submissions,
+                    namespace=self.workspace_namespace,
+                    workspace=self.workspace_name,
+                )
+            ),
+            Submissions,
+        )
 
         submissions = pd_flatten(submissions).convert_dtypes()
 

@@ -84,6 +84,89 @@ class TerraWorkspace:
                     model="flexible",
                 )
 
+    def delete_entities(self, entity_type: str, entity_ids: set[str]) -> None:
+        """
+        Delete entities from a Terra workspace, including their related entities.
+
+        :param entity_type: the type of entity to delete
+        :param entity_ids: a set of entity IDs to delete
+        """
+
+        if len(entity_ids) == 0:
+            logging.info("No entities to delete")
+            return
+
+        # get all entities
+        all_entities = call_firecloud_api(
+            firecloud_api.get_entities_with_type,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+        )
+
+        for x in all_entities:
+            x2 = x.copy()
+            x_updated = False
+
+            if x["entityType"] == entity_type:
+                continue
+
+            if "attributes" in x:
+                # this is the Terra equivalent of a join table
+                for k, v in x["attributes"].items():
+                    if v["itemsType"] != "EntityReference":
+                        raise NotImplementedError(
+                            f"Unknown item type {x['attributes'][k]['itemsType']}"
+                        )
+
+                    items = v["items"]
+
+                    if len(items) == 0:
+                        continue
+
+                    # remove entity IDs from the join table
+                    updated_items = [
+                        y
+                        for y in items
+                        if y["entityType"] == entity_type
+                        and y["entityName"] not in entity_ids
+                    ]
+
+                    if len(items) == len(updated_items):
+                        continue
+
+                    # we changed the list of referenced items
+                    x2["attributes"][k]["items"] = updated_items
+                    x_updated = True
+
+            if x_updated:
+                logging.info(f"Removing entities from {x2['name']}")
+
+                # update the entity for the join table
+                call_firecloud_api(
+                    firecloud_api.update_entity,
+                    namespace=self.workspace_namespace,
+                    workspace=self.workspace_name,
+                    etype=x2["entityType"],
+                    ename=x2["name"],
+                    updates=[
+                        {
+                            "op": "AddUpdateAttribute",
+                            "attributeName": "samples",
+                            "addUpdateAttribute": x2["attributes"]["samples"],
+                        }
+                    ],
+                )
+
+        # now that we've deleted related entities, delete the entities themselves
+        call_firecloud_api(
+            firecloud_api.delete_entities,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            json_body=[
+                {"entityType": entity_type, "entityName": x} for x in entity_ids
+            ],
+        )
+
     def create_entity_set(
         self,
         entity_type: str,

@@ -142,7 +142,7 @@ class TerraWorkspace:
                 logging.info(f"Removing entities from {x2['name']}")
 
                 # update the entity for the join table
-                call_firecloud_api(
+                _ = call_firecloud_api(
                     firecloud_api.update_entity,
                     namespace=self.workspace_namespace,
                     workspace=self.workspace_name,

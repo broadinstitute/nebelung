@@ -2,7 +2,7 @@ import datetime
 import logging
 import pathlib
 import tempfile
-from typing import Iterable, Type, Unpack
+from typing import Any, Iterable, Type, Unpack
 
 import pandas as pd
 from firecloud import api as firecloud_api
@@ -472,6 +472,21 @@ class TerraWorkspace:
                 ]
             ),
         }
+
+    def get_workflow_config(self, terra_workflow: TerraWorkflow) -> dict[str, Any]:
+        """
+        Get the method configuration for a workflow in this workspace.
+
+        :param terra_workflow: a `TerraWorkflow` instance
+        """
+
+        return call_firecloud_api(
+            firecloud_api.get_workspace_config,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            cnamespace=terra_workflow.method_config_namespace,
+            config=terra_workflow.method_config_name,
+        )
 
     def submit_workflow_run(
         self, terra_workflow: TerraWorkflow, **kwargs: Unpack[TerraJobSubmissionKwargs]

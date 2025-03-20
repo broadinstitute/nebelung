@@ -104,19 +104,24 @@ class TerraWorkspace:
         )
 
         for x in all_entities:
-            x2 = x.copy()
-            x_updated = False
-
             if x["entityType"] == entity_type:
+                # we're looking for entities that might *reference* the entity type
+                # we're deleting, not this entity type itself, which we'll delete
+                # directly later
                 continue
 
             if "attributes" in x:
-                # this is the Terra equivalent of a join table
+                x2 = x.copy()
+                x_updated = False
+
                 for k, v in x["attributes"].items():
-                    if v["itemsType"] != "EntityReference":
-                        raise NotImplementedError(
-                            f"Unknown item type {x['attributes'][k]['itemsType']}"
-                        )
+                    if not (
+                        isinstance(v, dict)
+                        and "itemsType" in v
+                        and v["itemsType"] == "EntityReference"
+                    ):
+                        # this is some other irrelevant entity type
+                        continue
 
                     items = v["items"]
 
@@ -138,24 +143,26 @@ class TerraWorkspace:
                     x2["attributes"][k]["items"] = updated_items
                     x_updated = True
 
-            if x_updated:
-                logging.info(f"Removing entities from {x2['name']}")
+                if x_updated:
+                    logging.info(f"Removing entities from {x2['name']}")
 
-                # update the entity for the join table
-                _ = call_firecloud_api(
-                    firecloud_api.update_entity,
-                    namespace=self.workspace_namespace,
-                    workspace=self.workspace_name,
-                    etype=x2["entityType"],
-                    ename=x2["name"],
-                    updates=[
-                        {
-                            "op": "AddUpdateAttribute",
-                            "attributeName": "samples",
-                            "addUpdateAttribute": x2["attributes"]["samples"],
-                        }
-                    ],
-                )
+                    attribute_name = list(x2["attributes"].keys())[0]
+
+                    # update the entity for the join table
+                    _ = call_firecloud_api(
+                        firecloud_api.update_entity,
+                        namespace=self.workspace_namespace,
+                        workspace=self.workspace_name,
+                        etype=x2["entityType"],
+                        ename=x2["name"],
+                        updates=[
+                            {
+                                "op": "AddUpdateAttribute",
+                                "attributeName": attribute_name,
+                                "addUpdateAttribute": x2["attributes"][attribute_name],
+                            }
+                        ],
+                    )
 
         # now that we've deleted related entities, delete the entities themselves
         call_firecloud_api(

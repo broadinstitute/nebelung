@@ -359,9 +359,8 @@ class TerraWorkspace:
         force_retry: bool = False,
     ) -> SubmittableEntities:
         """
-        Filter a list of entity IDs to those that aren't part of an active job for
-        `terra_workflow` and are either unsubmitted or could be resubmitted according to
-        the other arguments.
+        Check a list of entity IDs that might have been submitted to a particular
+        workflow and determine whether they eligible to be (re)submitted.
 
         :param entity_type: the kind of entity (e.g. "sample")
         :param entity_ids: a list of entity IDs
@@ -371,6 +370,7 @@ class TerraWorkspace:
         job
         :param force_retry: allow resubmission even if an entity has failed more than
         `resubmit_n_times` for that workflow
+        :return: a dictionary of statuses and entity IDs belong to them
         """
 
         # get all submissions in the workspace

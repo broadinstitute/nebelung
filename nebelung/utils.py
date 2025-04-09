@@ -87,19 +87,29 @@ def type_data_frame(
         # make an empty data frame that conforms to the Pandera schema
         s = pandera_schema.to_schema()
 
-        # `example` doesn't know how to instantiate dicts, so do that manually
+        # `example` doesn't know how to instantiate columns with structured data
         dict_cols = []
+        list_cols = []
 
         for c in s.columns:
             if s.columns[c].dtype.type is dict:
                 dict_cols.append(c)
                 s = s.remove_columns([c])
+            elif s.columns[c].dtype.type is list:
+                list_cols.append(c)
+                s = s.remove_columns([c])
 
-        df = pd.DataFrame(s.example(size=0))
+        df = pd.DataFrame(s.example(size=1))
 
         if len(dict_cols) > 0:
             for c in dict_cols:
-                df[c] = {}
+                df[c] = [{}] * len(df)
+
+        if len(list_cols) > 0:
+            for c in list_cols:
+                df[c] = [[]] * len(df)
+
+        df = df.iloc[:0]
 
     elif remove_unknown_cols:
         df_cols = pandera_schema.to_schema().columns.keys()

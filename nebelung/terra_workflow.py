@@ -138,7 +138,7 @@ class TerraWorkflow:
         snapshots = self.get_method_snapshots()
 
         to_delete = snapshots[n_snapshots_to_keep:]
-        logging.info(f"Deleting {len(to_delete)} old {self.method_name}} snapshot(s)")
+        logging.info(f"Deleting {len(to_delete)} old {self.method_name} snapshot(s)")
 
         for x in to_delete:
             call_firecloud_api(

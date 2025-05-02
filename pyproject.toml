@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebelung"
-version = "2.4.1"
+version = "2.5.0"
 description = "Firecloud API Wrapper"
 authors = ["Devin McCabe <dmccabe@broadinstitute.org>"]
 readme = "README.md"
@@ -17,15 +17,15 @@ pandera = {extras = ["strategies"], version = ">=0.20"}
 pd-flatten = ">=0.1"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.1"
-pyright = "^1.1.377"
+ruff = "^0.11.8"
+pyright = "^1.1.400"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-select = [
+lint.select = [
     "I",  # isort formatting
 ]
 

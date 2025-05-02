@@ -1,7 +1,7 @@
 import datetime
 import logging
 import pathlib
-import tempfile
+from io import StringIO
 from typing import Any, Iterable, Type, Unpack
 
 import pandas as pd
@@ -61,28 +61,38 @@ class TerraWorkspace:
 
         return type_data_frame(df, pandera_schema)
 
-    def upload_entities(self, df: pd.DataFrame) -> None:
+    def upload_entities(
+        self, df: pd.DataFrame, model: str = "flexible", delete_empty: bool = True
+    ) -> None:
         """
         Upload a data frame of entities to a Terra data table.
 
         :param df: a data frame of entities
+        :param model: the entity upload model to use ("flexible" is recommended over
+        "firecloud")
+        :param delete_empty: whether an empty cell in the data frame should clear the
+        corresponding value in the Terra data table
         """
 
         logging.info(f"{len(df)} entities to upload to Terra")
+        buffer = StringIO()  # store batches of TSV rows in this buffer
 
         for batch in batch_evenly(df, max_batch_size=500):
-            with tempfile.NamedTemporaryFile(suffix="tsv") as f:
-                batch.to_csv(f, sep="\t", index=False)  # pyright: ignore
-                f.flush()
+            logging.info(f"Upserting {len(batch)} entities to Terra")
 
-                logging.info(f"Upserting {len(batch)} entities to Terra")
-                call_firecloud_api(
-                    firecloud_api.upload_entities_tsv,
-                    namespace=self.workspace_namespace,
-                    workspace=self.workspace_name,
-                    entities_tsv=f.name,
-                    model="flexible",
-                )
+            # write the latest batch of TSV rows to the emptied buffer
+            buffer.seek(0)
+            buffer.truncate(0)
+            batch.to_csv(buffer, sep="\t", index=False)  # pyright: ignore
+
+            call_firecloud_api(
+                firecloud_api.upload_entities,
+                namespace=self.workspace_namespace,
+                workspace=self.workspace_name,
+                entity_data=buffer.getvalue(),
+                model=model,
+                delete_empty=delete_empty,
+            )
 
     def delete_entities(self, entity_type: str, entity_ids: set[str]) -> None:
         """
@@ -194,9 +204,9 @@ class TerraWorkspace:
         """
 
         if entity_set_id is None:
-            assert (
-                suffix is not None
-            ), "suffix is required if you don't specify a entity set ID"
+            assert suffix is not None, (
+                "suffix is required if you don't specify a entity set ID"
+            )
 
             # generate an ID for the entity set of new entities
             entity_set_id = "_".join(

@@ -83,7 +83,7 @@ class TerraWorkflow:
             f.write(self.persisted_wdl_script["wdl"])
             f.flush()
 
-            logging.info("Updating method")
+            logging.info(f"Updating method {self.method_name}")
             snapshot = call_firecloud_api(
                 firecloud_api.update_repository_method,
                 namespace=self.method_namespace,
@@ -92,7 +92,7 @@ class TerraWorkflow:
                 wdl=f.name,
             )
 
-        logging.info("Setting method ACL")
+        logging.info(f"Setting method {self.method_name} ACL")
         call_firecloud_api(
             firecloud_api.update_repository_method_acl,
             namespace=self.method_namespace,
@@ -101,7 +101,7 @@ class TerraWorkflow:
             acl_updates=[{"user": x, "role": "OWNER"} for x in owners],
         )
 
-        logging.info("Setting method repository config ACL")
+        logging.info(f"Setting method repository config ACL in {self.method_namespace}")
         # the firecloud package doesn't have a wrapper for this endpoint
         call_firecloud_api(
             firecloud_post,
@@ -138,7 +138,7 @@ class TerraWorkflow:
         snapshots = self.get_method_snapshots()
 
         to_delete = snapshots[n_snapshots_to_keep:]
-        logging.info(f"Deleting {len(to_delete)} old snapshot(s)")
+        logging.info(f"Deleting {len(to_delete)} old {self.method_name}} snapshot(s)")
 
         for x in to_delete:
             call_firecloud_api(

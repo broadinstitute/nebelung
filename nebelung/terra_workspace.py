@@ -45,7 +45,7 @@ class TerraWorkspace:
         :return: a data frame of entities
         """
 
-        logging.info(f"Getting {entity_type} entities")
+        logging.info(f"Getting {entity_type} entities from {self.workspace_name}")
         j = call_firecloud_api(
             firecloud_api.get_entities,
             namespace=self.workspace_namespace,
@@ -74,11 +74,11 @@ class TerraWorkspace:
         corresponding value in the Terra data table
         """
 
-        logging.info(f"{len(df)} entities to upload to Terra")
+        logging.info(f"{len(df)} entities to upload to {self.workspace_name}")
         buffer = StringIO()  # store batches of TSV rows in this buffer
 
         for batch in batch_evenly(df, max_batch_size=500):
-            logging.info(f"Upserting {len(batch)} entities to Terra")
+            logging.info(f"Upserting {len(batch)} entities to {self.workspace_name}")
 
             # write the latest batch of TSV rows to the emptied buffer
             buffer.seek(0)
@@ -103,7 +103,7 @@ class TerraWorkspace:
         """
 
         if len(entity_ids) == 0:
-            logging.info("No entities to delete")
+            logging.info(f"No entities in {self.workspace_name} to delete")
             return
 
         # get all entities
@@ -154,7 +154,9 @@ class TerraWorkspace:
                     x_updated = True
 
                 if x_updated:
-                    logging.info(f"Removing entities from {x2['name']}")
+                    logging.info(
+                        f"Removing entities from {x2['name']} in {self.workspace_name}"
+                    )
 
                     attribute_name = list(x2["attributes"].keys())[0]
 
@@ -231,7 +233,7 @@ class TerraWorkspace:
         )
         entity_set[f"entity:{entity_type}_set_id"] = entity_set_id
 
-        logging.info(f"Creating new {entity_type} set in Terra")
+        logging.info(f"Creating new {entity_type} set in {self.workspace_name}")
         self.upload_entities(
             entity_set.loc[:, [f"entity:{entity_type}_set_id"]].drop_duplicates()
         )
@@ -250,7 +252,7 @@ class TerraWorkspace:
 
         logging.info(
             f"Adding {len(entity_set)} {entity_type} entities "
-            f"to {entity_type} set {entity_set_id}"
+            f"to {entity_type} set {entity_set_id} in {self.workspace_name}"
         )
         self.upload_entities(entity_set)
 
@@ -514,7 +516,9 @@ class TerraWorkspace:
         :param terra_workflow: a `TerraWorkflow` instance
         """
 
-        logging.info(f"Submitting {terra_workflow.method_name} job")
+        logging.info(
+            f"Submitting {terra_workflow.method_name} job in {self.workspace_name}"
+        )
         call_firecloud_api(
             firecloud_api.create_submission,
             wnamespace=self.workspace_namespace,
@@ -534,7 +538,7 @@ class TerraWorkspace:
         :return: a list of Gumbo `task_result` objects to insert
         """
 
-        logging.info("Getting previous job submissions")
+        logging.info(f"Getting previous job submissions in {self.workspace_name}")
         submissions = type_data_frame(
             pd.DataFrame(
                 call_firecloud_api(

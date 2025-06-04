@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebelung"
-version = "2.5.1"
+version = "2.6.0"
 description = "Firecloud API Wrapper"
 authors = ["Devin McCabe <dmccabe@broadinstitute.org>"]
 readme = "README.md"
@@ -10,15 +10,20 @@ keywords = ["terra", "firecloud"]
 [tool.poetry.dependencies]
 python = ">=3.11"
 pandas = ">=1.5"
-firecloud = ">=0.16"
 pygithub = ">=2.3"
 pydantic = ">=2.8"
 pandera = {extras = ["strategies"], version = ">=0.20"}
 pd-flatten = ">=0.1"
+firecloud-api-cds = "^0.2.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.11.8"
-pyright = "^1.1.400"
+pyright = "^1.1.401"
+
+[[tool.poetry.source]]
+name = "public-python"
+url = "https://us-central1-python.pkg.dev/cds-artifacts/public-python/simple/"
+priority = "supplemental"
 
 [build-system]
 requires = ["poetry-core"]

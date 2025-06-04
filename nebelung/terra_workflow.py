@@ -4,8 +4,8 @@ import os
 import tempfile
 from pathlib import Path
 
-from firecloud import api as firecloud_api
-from firecloud.api import __post as firecloud_post
+from firecloud_api_cds import api as firecloud_api
+from firecloud_api_cds.api import __post as firecloud_post
 
 from nebelung.types import PersistedWdl
 from nebelung.utils import call_firecloud_api

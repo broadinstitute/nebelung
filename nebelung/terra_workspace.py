@@ -5,7 +5,7 @@ from io import StringIO
 from typing import Any, Iterable, Type, Unpack
 
 import pandas as pd
-from firecloud import api as firecloud_api
+from firecloud_api_cds import api as firecloud_api
 from pd_flatten import pd_flatten
 
 from nebelung.terra_workflow import TerraWorkflow

@@ -11,7 +11,6 @@ from pydantic import BaseModel
 class PersistedWdl(TypedDict):
     wdl: str
     public_url: str
-    version: NotRequired[str | None]
 
 
 class SubmittableEntities(TypedDict):
@@ -55,8 +54,6 @@ class TaskResult(BaseModel):
     url: Optional[str] = None
     value: Optional[dict] = None
     workflow_name: Optional[str] = None
-    workflow_source_url: Optional[str] = None
-    workflow_version: Optional[str] = None
 
 
 class CoercedDataFrame(pa.DataFrameModel):

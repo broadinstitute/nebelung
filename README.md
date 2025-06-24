@@ -107,25 +107,6 @@ To aid in automation and make it easier to submit jobs manually without filling 
 - Both methods and method configs have their own namespaces. To simplify things, the above example uses the same sets of values for both. This approach might not be ideal if your methods and their configs are not one-to-one.
 - The `TerraWorkspace.update_workflow` method will replace the `methodVersion` with an auto-incrementing version number based on the latest method's "snapshot ID" each time the method is updated. The `methodConfigVersion` should be incremented manually if desired.
 
-### Versioning
-
-Some information about a submitted job's method isn't easily recovered via the Firecloud API later on. Both `update_workflow` and `collect_workflow_outputs` are written to make it easier to connect workflow outputs to method versions for use in object (workflow output files and values) versioning. Include these workflow inputs in the WDL to enable this feature:
-
-```wdl
-version 1.0
-
-workflow call_cnvs {
-    input {
-        String workflow_version = "1.0" # internal version number for your use
-        String workflow_source_url # populated automatically with URL of this script
-    }
-}
-```
-
-The `update_workflow` method will automatically include these workflow inputs in the new method config's inputs, with `workflow_source_url` being set dynamically to the URL of the GitHub gist of that WDL script and `workflow_version` available for explicitly versioning the WDL.
-
-Because GitHub gist has its own built-in versioning, a `workflow_source_url` stored in a job submission's inputs will always resolve to the exact WDL script that was used in the job, even if that method is updated later. 
-
 ### Validation
 
 To avoid persisting potentially invalid WDL, `update_workflow` also validates all the WDL scripts with [WOMtool](https://cromwell.readthedocs.io/en/stable/WOMtool) first.

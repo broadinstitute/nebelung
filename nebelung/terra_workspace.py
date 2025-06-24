@@ -327,19 +327,6 @@ class TerraWorkspace:
             "snapshotId"
         ]
 
-        # inject the workflow version and URL into inputs so they get stored in job
-        # submissions
-        assert terra_workflow.persisted_wdl_script is not None
-
-        if "version" in terra_workflow.persisted_wdl_script:
-            terra_workflow.method_config["inputs"][
-                f"{terra_workflow.method_name}.workflow_version"
-            ] = f'"{terra_workflow.persisted_wdl_script["version"]}"'
-
-        terra_workflow.method_config["inputs"][
-            f"{terra_workflow.method_name}.workflow_source_url"
-        ] = f'"{terra_workflow.persisted_wdl_script["public_url"]}"'
-
         logging.info("Checking for existing method config")
         # all of the `firecloud_api.*_workspace_config` methods are really operations on
         # a method config, just inside a workspace
@@ -630,14 +617,6 @@ class TerraWorkspace:
                 base_o.terra_workflow_inputs = wmd["inputs"]
                 base_o.terra_workflow_root_dir = wmd["workflowRoot"]
                 base_o.terra_workspace_id = wmd["labels"]["workspace-id"]
-
-                # workflow URL and version should be injected into the inputs when the
-                # method config is deployed
-                if "workflow_source_url" in wmd["inputs"]:
-                    base_o.workflow_source_url = wmd["inputs"]["workflow_source_url"]
-
-                if "workflow_version" in wmd["inputs"]:
-                    base_o.workflow_version = wmd["inputs"]["workflow_version"]
 
                 # iterate through the outputs and make a `task_result` object for each
                 for label, output in wmd["outputs"].items():

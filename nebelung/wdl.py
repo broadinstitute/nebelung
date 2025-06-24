@@ -9,9 +9,6 @@ import github
 from nebelung.types import PersistedWdl
 
 IMPORT_PATTERN = re.compile(r"^import\s+\"(?!http)([^\"]+)\"\s+as\s+(\S+)")
-WORKFLOW_VERSION_PATTERN = re.compile(
-    r"^\s*String\s+workflow_version\s*=\s*\"([a-zA-Z0-9.]+)\""
-)
 
 
 class GistedWdl:
@@ -60,7 +57,6 @@ class GistedWdl:
             wdl_lines = f.readlines()
 
         wdl_basename = os.path.basename(wdl_path)
-        workflow_version = None
         buffer = []  # build buffer of lines in the WDL file
 
         for line in wdl_lines:
@@ -84,10 +80,6 @@ class GistedWdl:
                 buffer.append(converted_line)
 
             else:
-                if version_match := re.match(WORKFLOW_VERSION_PATTERN, line):
-                    # return to caller for possible use as a workflow input
-                    workflow_version = version_match[1]
-
                 # keep writing to buffer
                 buffer.append(line.rstrip())
 
@@ -123,8 +115,4 @@ class GistedWdl:
         # imported by its parent (if there is one) or used by the calling function
         raw_url = self.gist.files[wdl_basename].raw_data["raw_url"]
 
-        return {
-            "wdl": converted_wdl,
-            "public_url": raw_url,
-            "version": workflow_version,
-        }
+        return {"wdl": converted_wdl, "public_url": raw_url}

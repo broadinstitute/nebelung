@@ -515,6 +515,135 @@ class TerraWorkspace:
             **kwargs,
         )
 
+    def submit_delta_job(
+        self,
+        terra_workflow: TerraWorkflow,
+        entity_type: str,
+        entity_set_type: str,
+        entity_id_col: str,
+        expression: str,
+        input_cols: set[str] | None = None,
+        output_cols: set[str] | None = None,
+        resubmit_n_times: int = 0,
+        force_retry: bool = False,
+        use_callcache: bool = True,
+        use_reference_disks: bool = False,
+        memory_retry_multiplier: float = 1.5,
+        dry_run: bool = False,
+    ):
+        """
+        Identify entities in a Terra data table that need to have a workflow run on them
+        by:
+
+            1. checking for the presence of a workflow output in a data table column
+            2. confirming the entity is eligible to be submitted in a job by checking
+               for previous submissions of that same entity to the workflow
+
+        :param terra_workflow: a TerraWorkflow instance for the method
+        :param entity_type: the name of the Terra entity type
+        :param entity_set_type: the name of the Terra entity set type for `entity_type`
+        :param entity_id_col: the name of the ID column for the entity type
+        :param expression: the entity type expression (e.g. "this.samples")
+        :param input_cols: the set of column names that must all be present in the
+        entity type in order for an entity to be submittable
+        :param output_cols: the set of column names that must all be missing in the
+        entity type in order for an entity to be submittable
+        :param resubmit_n_times: the number of times to resubmit an entity in the event
+        it has failed in the past
+        :param force_retry: whether to retry even if `resubmit_n_times` has been reached
+        :param use_callcache: whether to use call caching
+        :param use_reference_disks: whether to use reference disks
+        :param memory_retry_multiplier: a multiplier for retrying with more memory
+        :param dry_run: whether to skip updates to external data stores
+        """
+
+        # get the method config for this workflow in this workspace
+        workflow_config = self.get_workflow_config(terra_workflow)
+
+        assert not workflow_config["deleted"]
+        assert workflow_config["rootEntityType"] == entity_type
+
+        # identify columns in data table used for input/output if not provided
+        if input_cols is None:
+            input_cols = {
+                v[5:]
+                for k, v in workflow_config["inputs"].items()
+                if v.startswith("this.")
+            }
+
+        if output_cols is None:
+            output_cols = {
+                v[5:]
+                for k, v in workflow_config["outputs"].items()
+                if v.startswith("this.")
+            }
+
+        # get the entities for this workflow entity type
+        entities = self.get_entities(entity_type)
+
+        # ensure columns exist to check for populated values
+        for c in input_cols.union(output_cols):
+            if c not in entities.columns:
+                entities[c] = pd.NA
+            else:
+                entities[c] = entities[c].replace({"": pd.NA})
+
+        # identify entities that have all required inputs but no outputs
+        entities_todo = entities.loc[
+            entities[list(input_cols)].notna().all(axis=1)
+            & entities[list(output_cols)].isna().all(axis=1)
+        ]
+
+        if len(entities_todo) == 0:
+            logging.info(f"No {entity_type}s to run {terra_workflow.method_name} for")
+            return
+
+        # get statuses of submitted workflows for the entitites
+        submittable_entities = self.check_submittable_entities(
+            entity_type,
+            entity_ids=entities_todo[entity_id_col],
+            terra_workflow=terra_workflow,
+            resubmit_n_times=resubmit_n_times,
+            force_retry=force_retry,
+        )
+
+        logging.info(f"Submittable entities: {submittable_entities}")
+
+        if len(submittable_entities["failed"]) > 0:
+            raise RuntimeError("Some entities have failed too many times")
+
+        # don't submit jobs for entities that are currently running, completed, or
+        # failed too many times
+        entities_todo = entities_todo.loc[
+            entities_todo[entity_id_col].isin(
+                list(
+                    submittable_entities["unsubmitted"]
+                    .union(submittable_entities["retryable"])
+                    .difference(submittable_entities["running"])
+                )
+            )
+        ]
+
+        if dry_run:
+            logging.info(f"(skipping) Submitting {terra_workflow.method_name} job")
+            return
+
+        entity_set_id = self.create_entity_set(
+            entity_type,
+            entity_ids=entities_todo[entity_id_col],
+            suffix=terra_workflow.method_name,
+        )
+
+        self.submit_workflow_run(
+            terra_workflow=terra_workflow,
+            entity=entity_set_id,
+            etype=entity_set_type,
+            expression=expression,
+            use_callcache=use_callcache,
+            use_reference_disks=use_reference_disks,
+            memory_retry_multiplier=memory_retry_multiplier,
+        )
+
     def collect_workflow_outputs(
         self, since: datetime.datetime | None = None
     ) -> list[TaskResult]:

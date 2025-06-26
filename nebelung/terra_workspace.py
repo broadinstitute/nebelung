@@ -529,6 +529,7 @@ class TerraWorkspace:
         use_callcache: bool = True,
         use_reference_disks: bool = False,
         memory_retry_multiplier: float = 1.5,
+        max_n_entities: int | None = None,
         dry_run: bool = False,
     ):
         """
@@ -554,6 +555,7 @@ class TerraWorkspace:
         :param use_callcache: whether to use call caching
         :param use_reference_disks: whether to use reference disks
         :param memory_retry_multiplier: a multiplier for retrying with more memory
+        :param max_n_entities: submit at most this many entities (random sample)
         :param dry_run: whether to skip updates to external data stores
         """
 
@@ -623,6 +625,13 @@ class TerraWorkspace:
                 )
             )
         ]
+
+        if len(entities_todo) == 0:
+            logging.info("No entities to submit")
+            return
+        elif len(entities_todo) > max_n_entities:
+            logging.info(f"Sampling {max_n_entities} of {len(entities_todo)} entities")
+            entities_todo = entities_todo.sample(n=max_n_entities)
 
         if dry_run:
             logging.info(f"(skipping) Submitting {terra_workflow.method_name} job")

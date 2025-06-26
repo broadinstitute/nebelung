@@ -629,7 +629,7 @@ class TerraWorkspace:
         if len(entities_todo) == 0:
             logging.info("No entities to submit")
             return
-        elif len(entities_todo) > max_n_entities:
+        elif max_n_entities is not None and len(entities_todo) > max_n_entities:
             logging.info(f"Sampling {max_n_entities} of {len(entities_todo)} entities")
             entities_todo = entities_todo.sample(n=max_n_entities)
 

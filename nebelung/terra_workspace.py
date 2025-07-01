@@ -592,61 +592,39 @@ class TerraWorkspace:
             terra_workflow=terra_workflow,
         )
 
-        # use state counts to indicate whether entities should be considered new
-        # (unsubmitted), failed, or failed (but retryable)
-        entity_statuses = state_counts.copy()
+        logging.info(f"Entity-workflow state counts: \n{state_counts}")
 
-        # nonzero aborted/aborting counts are allowed
-        entity_statuses["is_unsubmitted"] = (
-            entity_statuses[
-                ["queued", "submitted", "launching", "failed", "running", "succeeded"]
-            ]
-            .sum(axis=1)
-            .eq(0)
-        )
+        # remove successful entities
+        state_counts = state_counts.loc[state_counts["succeeded"].eq(0)]
 
-        entity_statuses["is_running"] = (
-            entity_statuses[["queued", "submitted", "launching", "running"]]
-            .sum(axis=1)
-            .ge(1)
-        )
-
-        if force_retry:
-            # any failed sample is retryable
-            entity_statuses["is_retryable"] = entity_statuses["failed"].ge(1)
-            entity_statuses["is_failed"] = False
-        else:
-            # retryable only if resubmit_n_times isn't exceeded
-            entity_statuses["is_retryable"] = entity_statuses["failed"].between(
-                1, resubmit_n_times
+        # remove runnning entities
+        state_counts = state_counts.loc[
+            (
+                state_counts[["queued", "submitted", "launching", "running"]]
+                .sum(axis=1)
+                .eq(0)
             )
-            entity_statuses["is_failed"] = entity_statuses["failed"].gt(
-                resubmit_n_times
-            )
+        ]
 
-        logging.info(f"Entity-workflow state counts: \n{entity_statuses}")
+        # remove unretryable failures
+        if not force_retry:
+            if bool(state_counts["failed"].gt(resubmit_n_times).any()):
+                logging.warning(
+                    f"Some entities have failed more than {resubmit_n_times} times"
+                )
 
-        if bool(entity_statuses["is_failed"].any()):
-            logging.warning(
-                f"Some entities have failed more than {resubmit_n_times} times"
-            )
+            state_counts = state_counts.loc[state_counts["failed"].le(resubmit_n_times)]
 
-        # collect all (re)submittable entities
-        entities_todo = entity_statuses.loc[
-            (entity_statuses["is_unsubmitted"] | entity_statuses["is_retryable"])
-            & ~entity_statuses["is_running"]
-        ].copy()
-
-        if len(entities_todo) == 0:
+        if len(state_counts) == 0:
             logging.info("No entities to submit")
             return
-        elif max_n_entities is not None and len(entities_todo) > max_n_entities:
-            logging.info(f"Sampling {max_n_entities} of {len(entities_todo)} entities")
+        elif max_n_entities is not None and len(state_counts) > max_n_entities:
+            logging.info(f"Sampling {max_n_entities} of {len(state_counts)} entities")
 
-            # prioritize entities with fewest previous failures, then by random
-            entities_todo["rnd"] = np.random.rand(len(entities_todo))
-            entities_todo = entities_todo.sort_values(["failed", "rnd"])
-            entities_todo = entities_todo.iloc[:max_n_entities]
+            # prioritize entities with fewest previous failures, then randomly
+            state_counts["rnd"] = np.random.rand(len(state_counts))
+            state_counts = state_counts.sort_values(["failed", "rnd"])
+            state_counts = state_counts.iloc[:max_n_entities]
 
         if dry_run:
             logging.info(f"(skipping) Submitting {terra_workflow.method_name} job")
@@ -654,7 +632,7 @@ class TerraWorkspace:
 
         entity_set_id = self.create_entity_set(
             entity_type,
-            entity_ids=entities_todo[entity_id_col],
+            entity_ids=state_counts[entity_id_col],
             suffix=terra_workflow.method_name,
         )
 

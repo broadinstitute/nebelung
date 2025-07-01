@@ -92,6 +92,21 @@ class SubmittedEntities(CoercedDataFrame):
     )
 
 
+class EntityStateCounts(CoercedDataFrame):
+    class Config(CoercedDataFrame.Config):
+        add_missing_columns = True
+
+    entity_id: Series[pd.StringDtype]
+    queued: Series[pd.Int64Dtype] = pa.Field(default=0)
+    submitted: Series[pd.Int64Dtype] = pa.Field(default=0)
+    launching: Series[pd.Int64Dtype] = pa.Field(default=0)
+    running: Series[pd.Int64Dtype] = pa.Field(default=0)
+    aborted: Series[pd.Int64Dtype] = pa.Field(default=0)
+    aborting: Series[pd.Int64Dtype] = pa.Field(default=0)
+    succeeded: Series[pd.Int64Dtype] = pa.Field(default=0)
+    failed: Series[pd.Int64Dtype] = pa.Field(default=0)
+
+
 PanderaBaseSchema = TypeVar("PanderaBaseSchema", bound=CoercedDataFrame)
 TypedDataFrame = pandera.typing.DataFrame
 T = TypeVar("T")

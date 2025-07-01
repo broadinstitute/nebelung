@@ -112,7 +112,7 @@ def type_data_frame(
         df = df.iloc[:0]
 
     elif remove_unknown_cols:
-        df_cols = pandera_schema.to_schema().columns.keys()
+        df_cols = list(pandera_schema.to_schema().columns.keys())
         df = df.loc[:, df_cols]
 
     return TypedDataFrame[pandera_schema](df)

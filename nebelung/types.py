@@ -13,13 +13,6 @@ class PersistedWdl(TypedDict):
     public_url: str
 
 
-class SubmittableEntities(TypedDict):
-    unsubmitted: set[str]
-    running: set[str]
-    retryable: set[str]
-    failed: set[str]
-
-
 class TerraJobSubmissionKwargs(TypedDict):
     entity: NotRequired[str | None]
     etype: NotRequired[str | None]

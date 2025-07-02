@@ -14,7 +14,6 @@ from nebelung.types import (
     EntityStateCounts,
     PanderaBaseSchema,
     Submissions,
-    SubmittableEntities,
     SubmittedEntities,
     TaskResult,
     TerraJobSubmissionKwargs,
@@ -252,6 +251,7 @@ class TerraWorkspace:
             :, [f"membership:{entity_type}_set_id", entity_type]
         ]
 
+        # noinspection PyTypeChecker
         logging.info(
             f"Adding {len(entity_set)} {entity_type} entities "
             f"to {entity_type} set {entity_set_id} in {self.workspace_name}"
@@ -632,7 +632,7 @@ class TerraWorkspace:
 
         entity_set_id = self.create_entity_set(
             entity_type,
-            entity_ids=state_counts[entity_id_col],
+            entity_ids=state_counts["entity_id"],
             suffix=terra_workflow.method_name,
         )
 

@@ -2,7 +2,7 @@ import datetime
 import logging
 import pathlib
 from io import StringIO
-from typing import Any, Iterable, Type, Unpack
+from typing import Any, Iterable, Literal, Type, Unpack
 
 import numpy as np
 import pandas as pd
@@ -511,8 +511,14 @@ class TerraWorkspace:
         resubmit_n_times: int = 0,
         force_retry: bool = False,
         use_callcache: bool = True,
+        delete_intermediate_output_files: bool = False,
         use_reference_disks: bool = False,
         memory_retry_multiplier: float = 1.0,
+        per_workflow_cost_cap: float | None = None,
+        workflow_failure_mode: Literal[
+            "ContinueWhilePossible", "NoNewCalls"
+        ] = "NoNewCalls",
+        user_comment: str | None = None,
         max_n_entities: int | None = None,
         dry_run: bool = False,
     ):
@@ -538,8 +544,16 @@ class TerraWorkspace:
         it has failed in the past
         :param force_retry: whether to retry even if `resubmit_n_times` has been reached
         :param use_callcache: whether to use call caching
+        :param delete_intermediate_output_files: whether to delete intermediate task
+        outputs after workflow completion
         :param use_reference_disks: whether to use reference disks
         :param memory_retry_multiplier: a multiplier for retrying with more memory
+        :param per_workflow_cost_cap: a cost threshold in USD to apply to individual
+        workflows
+        :param workflow_failure_mode: "ContinueWhilePossible" (to continue running other
+        tasks not downstream from a failed task) or "NoNewCalls" (to fail the workflow
+        immediately after any task fails)
+        :param user_comment: a comment to attach to the workflow run
         :param max_n_entities: submit at most this many entities (random sample)
         :param dry_run: whether to skip updates to external data stores
         """
@@ -643,7 +657,11 @@ class TerraWorkspace:
             expression=expression,
             use_callcache=use_callcache,
             use_reference_disks=use_reference_disks,
+            delete_intermediate_output_files=delete_intermediate_output_files,
             memory_retry_multiplier=memory_retry_multiplier,
+            per_workflow_cost_cap=per_workflow_cost_cap,
+            workflow_failure_mode=workflow_failure_mode,
+            user_comment=user_comment,
         )
 
     def collect_workflow_outputs(

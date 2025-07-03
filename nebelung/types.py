@@ -20,6 +20,7 @@ class TerraJobSubmissionKwargs(TypedDict):
     use_callcache: NotRequired[bool | None]
     delete_intermediate_output_files: NotRequired[bool | None]
     use_reference_disks: NotRequired[bool | None]
+    per_workflow_cost_cap: NotRequired[float | None]
     memory_retry_multiplier: NotRequired[float | None]
     workflow_failure_mode: NotRequired[str | None]
     user_comment: NotRequired[str | None]

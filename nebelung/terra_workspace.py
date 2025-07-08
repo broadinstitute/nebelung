@@ -606,11 +606,6 @@ class TerraWorkspace:
             terra_workflow=terra_workflow,
         )
 
-        logging.info(f"Entity-workflow state counts: \n{state_counts}")
-
-        # remove successful entities
-        state_counts = state_counts.loc[state_counts["succeeded"].eq(0)]
-
         # remove runnning entities
         state_counts = state_counts.loc[
             (

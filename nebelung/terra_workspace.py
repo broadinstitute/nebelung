@@ -506,6 +506,7 @@ class TerraWorkspace:
         entity_set_type: str,
         entity_id_col: str,
         expression: str,
+        entities: pd.DataFrame | TypedDataFrame | None = None,
         input_cols: set[str] | None = None,
         output_cols: set[str] | None = None,
         resubmit_n_times: int = 0,
@@ -536,6 +537,8 @@ class TerraWorkspace:
         :param entity_set_type: the name of the Terra entity set type for `entity_type`
         :param entity_id_col: the name of the ID column for the entity type
         :param expression: the entity type expression (e.g. "this.samples")
+        :param entities: a data frame of entities (if not provided, will be fetched
+        using the provided `entity_type`)
         :param input_cols: the set of column names that must all be present in the
         entity type in order for an entity to be submittable
         :param output_cols: the set of column names that must all be missing in the
@@ -579,8 +582,9 @@ class TerraWorkspace:
                 if v.startswith("this.")
             }
 
-        # get the entities for this workflow entity type
-        entities = self.get_entities(entity_type)
+        if entities is None:
+            # get the entities for this workflow entity type
+            entities = self.get_entities(entity_type)
 
         # ensure columns exist to check for populated values
         for c in input_cols.union(output_cols):

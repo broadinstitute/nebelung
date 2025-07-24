@@ -622,17 +622,19 @@ class TerraWorkspace:
         # remove unretryable failures
         if not force_retry:
             if bool(state_counts["failed"].gt(resubmit_n_times).any()):
-                logging.warning(
+                logging.error(
                     f"Some entities have failed more than {resubmit_n_times} times"
                 )
 
             state_counts = state_counts.loc[state_counts["failed"].le(resubmit_n_times)]
 
         if len(state_counts) == 0:
-            logging.info("No entities to submit")
+            logging.info(f"No {entity_type}s to run {terra_workflow.method_name} for")
             return
         elif max_n_entities is not None and len(state_counts) > max_n_entities:
-            logging.info(f"Sampling {max_n_entities} of {len(state_counts)} entities")
+            logging.info(
+                f"Sampling {max_n_entities} of {len(state_counts)} {entity_type}s"
+            )
 
             # prioritize entities with fewest previous failures, then randomly
             state_counts["rnd"] = np.random.rand(len(state_counts))

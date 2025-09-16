@@ -59,12 +59,12 @@ def batch_evenly(
             raise TypeError(f"Cannot batch items of type {type(items)}: {e}")
 
     n_items = len(batchable_items)
-    n_batches = 1 + n_items // max_batch_size
+    n_batches = ceil(n_items / max_batch_size)
     batch_size = n_items / n_batches
 
     for i in range(n_batches):
         i1 = ceil(i * batch_size)
-        i2 = ceil((i + 1) * batch_size)
+        i2 = min(ceil((i + 1) * batch_size), n_items)
         yield comprehender(batchable_items, i1, i2)  # pyright:ignore
 
 

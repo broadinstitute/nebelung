@@ -22,7 +22,7 @@ class TerraWorkflow:
         method_synopsis: str,
         workflow_wdl_path: Path,
         method_config_json_path: Path,
-        workflow_inputs_json_path: Path,
+        workflow_inputs_json_path: Path | None = None,
         github_pat: str | None = None,
         womtool_jar: str | None = None,
     ) -> None:
@@ -39,11 +39,13 @@ class TerraWorkflow:
 
         self.persisted_wdl_script: PersistedWdl | None = None
 
-        # merge inputs (values) with method config's inputs (this.* mapping)
         self.method_config = json.load(open(self.method_config_json_path, "r"))
-        workflow_inputs = json.load(open(self.workflow_inputs_json_path, "r"))
-        workflow_inputs.update(self.method_config["inputs"])
-        self.method_config["inputs"] = workflow_inputs  # method config can override
+
+        if workflow_inputs_json_path is not None:
+            # merge inputs (values) with method config's inputs (this.* mapping)
+            workflow_inputs = json.load(open(self.workflow_inputs_json_path, "r"))
+            workflow_inputs.update(self.method_config["inputs"])
+            self.method_config["inputs"] = workflow_inputs  # method config can override
 
     def persist_method_on_github(self) -> None:
         """

@@ -36,6 +36,11 @@ if __name__ == "__main__":
         method_config_json_path=Path(
             os.path.join(os.path.dirname(__file__), "workflows", "hello_world.json")
         ).resolve(),
+        workflow_inputs_json_path=Path(
+            os.path.join(
+                os.path.dirname(__file__), "workflows", "hello_world_inputs.json"
+            )
+        ).resolve(),
     )
 
     if args.step == "upload_entities":

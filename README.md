@@ -107,6 +107,20 @@ To aid in automation and make it easier to submit jobs manually without filling 
 - Both methods and method configs have their own namespaces. To simplify things, the above example uses the same sets of values for both. This approach might not be ideal if your methods and their configs are not one-to-one.
 - The `TerraWorkspace.update_workflow` method will replace the `methodVersion` with an auto-incrementing version number based on the latest method's "snapshot ID" each time the method is updated. The `methodConfigVersion` should be incremented manually if desired.
 
+### Inputs
+
+To allow for method/workflow `inputs` to be used as a "test parameter config" JSON file on Dockstore, a optional separate JSON file for this part of the method config can be specified, e.g.:
+
+```json
+{
+  "call_cnvs.some_static_file": "\"gs://bucket/file.txt\""
+}
+```
+
+The object from the inputs JSON file is merged into the `inputs` of the method config, with the method config's values taking precedence.
+
+Using the inputs JSON file for static values and the method config's `inputs` object for `this.column_name` mappings is recommended to keep the former unopinionated and appropriate for distribution on Dockstore. 
+
 ### Validation
 
 To avoid persisting potentially invalid WDL, `update_workflow` also validates all the WDL scripts with [WOMtool](https://cromwell.readthedocs.io/en/stable/WOMtool) first.
@@ -136,6 +150,7 @@ terra_workflow = TerraWorkflow(
     method_synopsis="This method calls CNVs.",
     workflow_wdl_path=Path("/path/to/call_cnvs.wdl").resolve(),
     method_config_json_path=Path("/path/to/call_cnvs.json").resolve(),
+    workflow_inputs_json_path=Path("/path/to/call_cnvs_inputs.json").resolve(),
     github_pat="github_pat_...", # (if not using the GITHUB_PAT ENV variable) 
     womtool_jar="/path/to/womtool.jar", # (if not using the WOMTOOL_JAR ENV variable) 
 )

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebelung"
-version = "2.10.1"
+version = "2.10.2"
 description = "Firecloud API Wrapper"
 authors = ["Devin McCabe <dmccabe@broadinstitute.org>"]
 readme = "README.md"
@@ -18,7 +18,7 @@ firecloud-api-cds = "^0.2.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.12.1"
-pyright = "^1.1.402"
+pyright = "^1.1.405"
 pandas-stubs = "^2.2.3.250527"
 
 [[tool.poetry.source]]

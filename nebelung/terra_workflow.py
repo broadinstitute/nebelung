@@ -33,7 +33,6 @@ class TerraWorkflow:
         self.method_synopsis = method_synopsis
         self.workflow_wdl_path = workflow_wdl_path
         self.method_config_json_path = method_config_json_path
-        self.workflow_inputs_json_path = workflow_inputs_json_path
         self.github_pat = os.getenv("GITHUB_PAT", github_pat)
         self.womtool_jar = os.getenv("WOMTOOL_JAR", womtool_jar)
 
@@ -43,7 +42,7 @@ class TerraWorkflow:
 
         if workflow_inputs_json_path is not None:
             # merge inputs (values) with method config's inputs (this.* mapping)
-            workflow_inputs = json.load(open(self.workflow_inputs_json_path, "r"))
+            workflow_inputs = json.load(open(workflow_inputs_json_path, "r"))
             workflow_inputs.update(self.method_config["inputs"])
             self.method_config["inputs"] = workflow_inputs  # method config can override
 

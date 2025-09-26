@@ -43,6 +43,14 @@ class TerraWorkflow:
         if workflow_inputs_json_path is not None:
             # merge inputs (values) with method config's inputs (this.* mapping)
             workflow_inputs = json.load(open(workflow_inputs_json_path, "r"))
+
+            # literal input values (i.e. not `this.foo`) must be converted to strings
+            for k, v in workflow_inputs.items():
+                if isinstance(v, str):
+                    workflow_inputs[k] = '"' + v + '"'  # wrap with escaped qoutes
+                else:
+                    workflow_inputs[k] = str(v)
+
             workflow_inputs.update(self.method_config["inputs"])
             self.method_config["inputs"] = workflow_inputs  # method config can override
 

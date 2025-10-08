@@ -228,28 +228,14 @@ class TerraWorkspace:
                 "An entity_set_id was provided, so the suffix option is ignored"
             )
 
-        # construct a data frame of entity IDs for this entity set
-        entity_set = pd.DataFrame(
-            {f"entity:{entity_ids}_id": entity_ids}, dtype="string"
-        )
-        entity_set[f"entity:{entity_type}_set_id"] = entity_set_id
-
-        logging.info(f"Creating new {entity_type} set in {self.workspace_name}")
-        self.upload_entities(
-            entity_set.loc[:, [f"entity:{entity_type}_set_id"]].drop_duplicates()
-        )
-
         # construct the join/membership table between the entity set and its entities
-        entity_set = entity_set.rename(
-            columns={
-                f"entity:{entity_type}_set_id": f"membership:{entity_type}_set_id",
-                f"entity:{entity_ids}_id": entity_type,
-            }
+        entity_set = pd.DataFrame(
+            {
+                f"membership:{entity_type}_set_id": entity_set_id,
+                entity_type: list(entity_ids),
+            },
+            dtype="string",
         )
-
-        entity_set = entity_set.loc[
-            :, [f"membership:{entity_type}_set_id", entity_type]
-        ]
 
         # noinspection PyTypeChecker
         logging.info(

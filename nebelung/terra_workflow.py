@@ -8,7 +8,7 @@ from firecloud_api_cds import api as firecloud_api
 from firecloud_api_cds.api import __post as firecloud_post
 
 from nebelung.types import PersistedWdl
-from nebelung.utils import call_firecloud_api
+from nebelung.utils import call_firecloud_api, parse_workflow_inputs
 from nebelung.wdl import GistedWdl
 
 
@@ -42,16 +42,7 @@ class TerraWorkflow:
 
         if workflow_inputs_json_path is not None:
             # merge actual inputs (values) with method config's inputs (this.* mapping)
-            workflow_inputs = json.load(
-                open(workflow_inputs_json_path, "r"),
-                object_hook=lambda obj: {
-                    k: '"' + json.dumps(v)[1:-1] + '"' # wrap strings with double quotes
-                    if isinstance(v, str)
-                    else json.dumps(v) # stringify raw JSON value
-                    for k, v in obj.items()
-                },
-            )
-
+            workflow_inputs = parse_workflow_inputs(workflow_inputs_json_path)
             workflow_inputs.update(self.method_config["inputs"])
             self.method_config["inputs"] = workflow_inputs  # method config can override
 

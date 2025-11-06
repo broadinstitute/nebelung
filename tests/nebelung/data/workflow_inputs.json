@@ -1,0 +1,13 @@
+{
+  "workflow.negative_decimal": -1.328,
+  "workflow.positive_decimal": 0.15,
+  "workflow.small_decimal": 0.00001,
+  "workflow.large_decimal": 999999999.999999999,
+  "workflow.negative_integer": -2,
+  "workflow.positive_integer": 5,
+  "workflow.large_integer": 100000000000,
+  "workflow.bool": false,
+  "workflow.string": "test",
+  "workflow.escaped_string": "(FILTER=\\\"PASS\\\"|FILTER=\\\"MaxDepth\\\") && (SUM(FORMAT/PR[0:1]+FORMAT/SR[0:1]) >= 5) && (CHROM!=\\\"chrM\\\") && (ALT!~\\\"chrM\\\")",
+  "workflow.array": "[this.foo, this.bar]"
+}

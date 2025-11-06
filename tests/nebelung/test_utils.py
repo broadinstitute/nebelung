@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import pandas as pd
 import pandera as pa
 from pandas._testing import assert_frame_equal
 from pandera.typing import Series
 
 from nebelung.types import CoercedDataFrame
-from nebelung.utils import type_data_frame
+from nebelung.utils import parse_workflow_inputs, type_data_frame
 
 
 class Model(CoercedDataFrame):
@@ -186,3 +188,26 @@ class TestTypeDataFrame:
         expected["opt"] = expected["opt"].astype("boolean")
 
         assert_frame_equal(observed, expected)
+
+
+class TestParseWorkflowInputs:
+    def test_workflow_inputs(self):
+        observed = parse_workflow_inputs(
+            Path("tests/nebelung/data/workflow_inputs.json")
+        )
+
+        expected = {
+            "workflow.negative_decimal": "-1.328",
+            "workflow.positive_decimal": "0.15",
+            "workflow.small_decimal": "0.00001",
+            "workflow.large_decimal": "999999999.999999999",
+            "workflow.negative_integer": "-2",
+            "workflow.positive_integer": "5",
+            "workflow.large_integer": "100000000000",
+            "workflow.bool": "false",
+            "workflow.string": '"test"',
+            "workflow.escaped_string": '"(FILTER=\\\\\\"PASS\\\\\\"|FILTER=\\\\\\"MaxDepth\\\\\\") && (SUM(FORMAT/PR[0:1]+FORMAT/SR[0:1]) >= 5) && (CHROM!=\\\\\\"chrM\\\\\\") && (ALT!~\\\\\\"chrM\\\\\\")"',
+            "workflow.array": '"[this.foo, this.bar]"',
+        }
+
+        assert observed == expected

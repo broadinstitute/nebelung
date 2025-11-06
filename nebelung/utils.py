@@ -1,8 +1,11 @@
+import json
 import logging
+from decimal import Decimal
 from functools import partial
 from math import ceil, sqrt
+from os import PathLike
 from time import sleep
-from typing import Any, Callable, Generator, Iterable, ParamSpec, Type
+from typing import Any, Callable, Dict, Generator, Iterable, ParamSpec, Type
 
 import pandas as pd
 import requests
@@ -246,3 +249,29 @@ def call_firecloud_api(
         logging.error(f"Error getting response as JSON: {e}")
         logging.error(f"Response text: {res.text}")
         raise requests.RequestException(f"HTTP {res.status_code} error")
+
+
+def parse_workflow_inputs(path: PathLike) -> Dict[str, Any]:
+    """
+    Parse a workflow inputs JSON file into a dictionary with formatted values suitable
+    for upload as a Terra method config.
+
+    :param path: Path to the JSON file containing workflow inputs.
+    :return: Dictionary mapping input names to formatted string values.
+    """
+
+    def custom_object_hook(obj: Dict[str, Any]) -> Dict[str, Any]:
+        result: Dict[str, Any] = {}
+
+        for k, v in obj.items():
+            if isinstance(v, str):
+                result[k] = '"' + json.dumps(v)[1:-1] + '"'
+            elif isinstance(v, Decimal):
+                result[k] = str(v)
+            else:
+                result[k] = json.dumps(v)
+
+        return result
+
+    with open(path, "r") as f:
+        return json.load(f, object_hook=custom_object_hook, parse_float=Decimal)

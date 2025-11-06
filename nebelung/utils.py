@@ -71,14 +71,16 @@ def batch_evenly(
 def type_data_frame(
     df: pd.DataFrame,
     pandera_schema: Type[PanderaBaseSchema],
+    reorder_cols: bool = True,
     remove_unknown_cols: bool = False,
 ) -> TypedDataFrame[PanderaBaseSchema]:
     """
-    Coerce a data frame into one specified by a Pandera schema and optionally remove
-    unknown columns.
+    Coerce a data frame into one specified by a Pandera schema and optionally reorder
+    columns and remove unknown columns.
 
     :param df: a data frame
     :param pandera_schema: a Pandera schema
+    :param reorder_cols: reorder columns as specified in the schema
     :param remove_unknown_cols: remove columns not specified in the schema
     :return: a data frame validated with the provided Pandera schema
     """
@@ -110,12 +112,35 @@ def type_data_frame(
                 df[c] = [[]] * len(df)
 
         df = df.iloc[:0]
+        return TypedDataFrame[pandera_schema](df)
 
-    elif remove_unknown_cols:
-        df_cols = list(pandera_schema.to_schema().columns.keys())
-        df = df.loc[:, df_cols]
+    if not remove_unknown_cols and not reorder_cols:
+        # can type and return
+        return TypedDataFrame[pandera_schema](df)
 
-    return TypedDataFrame[pandera_schema](df)
+    # we need to collect the current columns and schema columns (in original orders)
+    current_cols = list(df.columns)
+    schema_cols = list(pandera_schema.to_schema().columns.keys())
+
+    if remove_unknown_cols:
+        # drop excess columns (if any)
+        excess_cols = list(set(current_cols) - set(schema_cols))
+
+        if len(excess_cols) > 0:
+            df = df.drop(columns=excess_cols)
+            current_cols = list(df.columns)
+
+    # `df` might contain extra columns, but we can still type it now
+    df = TypedDataFrame[pandera_schema](df)
+
+    if reorder_cols:
+        # put columns in schema order, with extra columns in original order at the end
+        all_cols = schema_cols.copy()
+        all_cols.extend(current_cols)
+        all_cols = list(dict.fromkeys(all_cols))
+        df = df.loc[:, all_cols]
+
+    return df
 
 
 def generalized_fibonacci(n: int, *, f0: float = 1.0, f1: float = 1.0) -> float:

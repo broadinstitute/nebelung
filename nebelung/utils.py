@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 from decimal import Decimal
 from functools import partial
 from math import ceil, sqrt
@@ -180,6 +181,7 @@ def maybe_retry(
     retryable_exceptions: tuple[Type[Exception], ...] = tuple([Exception]),
     max_retries: int = 0,
     waiter: Callable[..., float] = partial(generalized_fibonacci, f0=1.0, f1=1.0),
+    jitter: bool = True,
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> T:
@@ -192,6 +194,7 @@ def maybe_retry(
     :param max_retries: the maximum number of times to retry (can be 0 if not retrying)
     :param waiter: a function that returns the number of seconds to wait given how many
     tries have already happened
+    :param jitter: whether to add random jitter to the number of seconds to wait
     :param kwargs: keyword arguments to `func`
     :return: the return value from `func`
     """
@@ -207,10 +210,14 @@ def maybe_retry(
 
         except retryable_exceptions as e:
             if n_retries == max_retries:
-                raise e
+                raise
 
-            wait_seconds = round(waiter(n_retries + 1), 1)
-            logging.error(f"{e} (retrying in {wait_seconds}s)")
+            wait_seconds = waiter(n_retries + 1)
+
+            if jitter:
+                wait_seconds += random.uniform(wait_seconds / -2, wait_seconds / 2)
+
+            logging.error(f"{e} (retrying in {round(wait_seconds, 1)}s)")
             sleep(wait_seconds)
             n_retries += 1
 

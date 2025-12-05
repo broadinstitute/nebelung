@@ -33,6 +33,20 @@ class TerraWorkspace:
         self.workspace_name = workspace_name
         self.owners = [] if owners is None else owners
 
+    def get_bucket_name(self) -> str:
+        """
+        Get the GCS bucket name for the workspace.
+
+        :return: the bucket name
+        """
+
+        return call_firecloud_api(
+            firecloud_api.get_workspace,
+            namespace=self.workspace_namespace,
+            workspace=self.workspace_name,
+            fields=["workspace.bucketName"],
+        )["workspace"]["bucketName"]
+
     def get_entities(
         self,
         entity_type: str,

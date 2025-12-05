@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nebelung"
-version = "2.12.4"
+version = "2.12.5"
 description = "Firecloud API Wrapper"
 authors = ["Devin McCabe <dmccabe@broadinstitute.org>"]
 readme = "README.md"

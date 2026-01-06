@@ -326,8 +326,8 @@ description = "Fork of broadinstitute/fiss"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "firecloud_api_cds-0.2.0-py3-none-any.whl", hash = "sha256:c263ea9868670bce0e6d751de5c5c9271ae3180a604b918499c36f0ddcf2daa5"},
-    {file = "firecloud_api_cds-0.2.0.tar.gz", hash = "sha256:31611d3d2c08db08b28dc10f00ecc5eeb15600a3df8d38b38df98c95c5af13a9"},
+    {file = "firecloud_api_cds-0.2.0-py3-none-any.whl", hash = "sha256:41513aaec2b5bedf900996f3c04cccd438acda1b1266937ad41e66cd539402cd"},
+    {file = "firecloud_api_cds-0.2.0.tar.gz", hash = "sha256:5cbd17dfab2c96792dbed2e8aeb799520837ba8f3ecf06d643f33c54f75e7cc2"},
 ]
 
 [package.dependencies]
@@ -335,11 +335,6 @@ google-auth = ">=1.6.3,<2.1.dev0 || >2.3.0,<2.3.1 || >2.3.1"
 google-cloud-storage = ">=1.36.1"
 pydot = ">=4.0.0"
 six = ">=1.17.0"
-
-[package.source]
-type = "legacy"
-url = "https://us-central1-python.pkg.dev/cds-artifacts/public-python/simple"
-reference = "public-python"
 
 [[package]]
 name = "google-api-core"
@@ -1481,4 +1476,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11"
-content-hash = "fee871b42279dbcdb491dad9233ffda5ed01cb069a110c6c5266d4ff34218959"
+content-hash = "34f2adef5d349389c9faf110a488062e85a29e23f4f2d53b8ea5df0c356c4cec"

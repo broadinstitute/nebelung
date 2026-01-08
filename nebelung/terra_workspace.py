@@ -561,6 +561,10 @@ class TerraWorkspace:
         :param dry_run: whether to skip updates to external data stores
         """
 
+        if max_n_entities == 0:
+            logging.info(f"max_n_entities is set to 0, returning")
+            return
+
         # get the method config for this workflow in this workspace
         workflow_config = self.get_workflow_config(terra_workflow)
 

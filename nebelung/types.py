@@ -1,7 +1,7 @@
 from typing import Any, NotRequired, Optional, TypedDict, TypeVar
 
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 import pandera.typing
 from pandera.api.pandas.model_config import BaseConfig as PaBaseConfig
 from pandera.typing import Series

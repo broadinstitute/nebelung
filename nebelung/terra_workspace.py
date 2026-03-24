@@ -627,7 +627,13 @@ class TerraWorkspace:
         if not force_retry:
             if bool(state_counts["failed"].gt(resubmit_n_times).any()):
                 logging.error(
-                    f"Some entities have failed more than {resubmit_n_times} times"
+                    f"Some {entity_type} have failed "
+                    f"more than {resubmit_n_times} times: "
+                    + ", ".join(
+                        state_counts.loc[
+                            state_counts["failed"].gt(resubmit_n_times), "entity_id"
+                        ].tolist()
+                    )
                 )
 
             state_counts = state_counts.loc[state_counts["failed"].le(resubmit_n_times)]

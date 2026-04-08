@@ -193,7 +193,7 @@ class TestTypeDataFrame:
 class TestParseWorkflowInputs:
     def test_workflow_inputs(self):
         observed = parse_workflow_inputs(
-            Path("tests/nebelung/data/workflow_inputs.json")
+            Path(__file__).parent / "data/workflow_inputs.json"
         )
 
         expected = {

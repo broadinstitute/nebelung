@@ -562,7 +562,10 @@ class TerraWorkspace:
         """
 
         if max_n_entities == 0:
-            logging.info(f"max_n_entities is set to 0, returning")
+            logging.info(
+                "max_n_entities is set to 0, skipping "
+                f"{terra_workflow.method_name} delta job submissions"
+            )
             return
 
         # get the method config for this workflow in this workspace
@@ -652,7 +655,9 @@ class TerraWorkspace:
             state_counts = state_counts.iloc[:max_n_entities]
 
         if dry_run:
-            logging.info(f"(skipping) Submitting {terra_workflow.method_name} job")
+            logging.info(
+                f"(skipping, dry run) Submitting {terra_workflow.method_name} job"
+            )
             return
 
         entity_set_id = self.create_entity_set(

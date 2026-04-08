@@ -10,7 +10,7 @@ This package provides a wrapper around the [Firecloud](https://pypi.org/project/
 Nebelung requires Python 3.11 or later.
 
 ```shell
-poetry add nebelung # or pip install nebelung
+uv add nebelung # or `poetry add nebelung`, `pip install nebelung`, etc.
 ```
 
 # Usage
@@ -113,7 +113,7 @@ To allow for method/workflow `inputs` to be used as a "test parameter config" JS
 
 ```json
 {
-  "call_cnvs.some_static_file": "\"gs://bucket/file.txt\""
+  "call_cnvs.some_static_file": "gs://bucket/file.txt"
 }
 ```
 
@@ -194,6 +194,4 @@ result = call_firecloud_api(
 
 # Development
 
-Run `pre-commit run --all-files` to automatically format your code with [Ruff](https://docs.astral.sh/ruff/) and check static types with [Pyright](https://microsoft.github.io/pyright).
-
-To update the [package on pipy.org](https://pypi.org/project/nebelung), update the `version` in `pyproject.toml` and run `poetry publish --build`.
+To update the [package on pipy.org](https://pypi.org/project/nebelung), update the `version` in `pyproject.toml` and run `uv build && uv publish`.

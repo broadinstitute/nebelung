@@ -15,15 +15,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+          cache: "pip"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Set up virtual environment
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          uv venv .venv
+          echo "VIRTUAL_ENV=$(pwd)/.venv" >> $GITHUB_ENV
+          echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+
+      - name: Install dependencies
+        run: uv sync
+
       - name: Run tests
-        run: pytest tests/ -v
+        run: uv run pytest tests/ -v
+
       - name: Check types
-        run: pyright src/nebelung
+        run: uv run pyright src/nebelung

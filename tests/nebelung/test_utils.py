@@ -6,7 +6,7 @@ from pandas._testing import assert_frame_equal
 from pandera.typing import Series
 
 from nebelung.types import CoercedDataFrame
-from nebelung.utils import parse_workflow_inputs, type_data_frame
+from nebelung.utils import detect_col_mapping_io, parse_workflow_inputs, type_data_frame
 
 
 class Model(CoercedDataFrame):
@@ -209,5 +209,21 @@ class TestParseWorkflowInputs:
             "workflow.escaped_string": '"(FILTER=\\\\\\"PASS\\\\\\"|FILTER=\\\\\\"MaxDepth\\\\\\") && (SUM(FORMAT/PR[0:1]+FORMAT/SR[0:1]) >= 5) && (CHROM!=\\\\\\"chrM\\\\\\") && (ALT!~\\\\\\"chrM\\\\\\")"',
             "workflow.array": '"[this.foo, this.bar]"',
         }
+
+        assert observed == expected
+
+
+class TestDetectColMappingIo:
+    def test_detect_col_mapping_io(self):
+        observed = detect_col_mapping_io(
+            items=[
+                "[this.mut_annot_bcftools_vcf, this.mut_annot_vep_vcf]",
+                "this.sample_id",
+                "100000",
+                '"gs://ccleparams/vcf_to_duckdb_config.json"',
+            ]
+        )
+
+        expected = {"mut_annot_bcftools_vcf", "mut_annot_vep_vcf", "sample_id"}
 
         assert observed == expected

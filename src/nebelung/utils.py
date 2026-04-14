@@ -1,6 +1,7 @@
 import json
 import logging
 import random
+import re
 from decimal import Decimal
 from functools import partial
 from math import ceil, sqrt
@@ -282,3 +283,30 @@ def parse_workflow_inputs(path: PathLike) -> Dict[str, Any]:
 
     with open(path, "r") as f:
         return json.load(f, object_hook=custom_object_hook, parse_float=Decimal)
+
+
+def detect_col_mapping_io(items: Iterable[str]) -> set[str]:
+    """
+    Filter list of input/output values in a workflow config to ones beginning with
+    "this.", including in arrays. For use in submittable entities for delta job
+    submission.
+
+    :param items: input/output values of a workflow config
+    :return: a set of matching "this.*" input/output values
+    """
+
+    result = []
+
+    for item in items:
+        item = item.strip()
+
+        if item.startswith("[") and item.endswith("]"):
+            # remove brackets and split on commas
+            inner = item[1:-1]
+            parts = re.split(r"\s*,\s*", inner)
+        else:
+            parts = [item]
+
+        [result.append(p[5:]) for p in parts if p.startswith("this.")]
+
+    return set(result)

@@ -19,7 +19,12 @@ from nebelung.types import (
     TerraJobSubmissionKwargs,
     TypedDataFrame,
 )
-from nebelung.utils import batch_evenly, call_firecloud_api, type_data_frame
+from nebelung.utils import (
+    batch_evenly,
+    call_firecloud_api,
+    detect_col_mapping_io,
+    type_data_frame,
+)
 
 
 class TerraWorkspace:
@@ -576,18 +581,12 @@ class TerraWorkspace:
 
         # identify columns in data table used for input/output if not provided
         if input_cols is None:
-            input_cols = {
-                v[5:]
-                for k, v in workflow_config["inputs"].items()
-                if v.startswith("this.")
-            }
+            input_cols = detect_col_mapping_io(items=workflow_config["inputs"].values())
 
         if output_cols is None:
-            output_cols = {
-                v[5:]
-                for k, v in workflow_config["outputs"].items()
-                if v.startswith("this.")
-            }
+            output_cols = detect_col_mapping_io(
+                items=workflow_config["outputs"].values()
+            )
 
         if entities is None:
             # get the entities for this workflow entity type

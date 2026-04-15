@@ -200,7 +200,7 @@ wheels = [
 
 [[package]]
 name = "firecloud-api-cds"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-auth" },
@@ -208,9 +208,9 @@ dependencies = [
     { name = "pydot" },
     { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f8/f6/27160e4ff98bfe59d24dcaee05ff5a7204518fd5c2fa4a2d2b1ad4a7c4bd/firecloud_api_cds-0.2.0.tar.gz", hash = "sha256:5cbd17dfab2c96792dbed2e8aeb799520837ba8f3ecf06d643f33c54f75e7cc2", size = 66393, upload-time = "2026-01-06T18:18:25.79Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/fc/ccaaa79bdb56dac857d1f7d1eff380cf14467bf884c8d3ad7d2df83861f6/firecloud_api_cds-0.2.1.tar.gz", hash = "sha256:01f433ac98007effc35cc6d149e66fa8862525f4a6ea28104623038692c6e36c", size = 67429, upload-time = "2026-04-15T16:47:17.851Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/03/771d9bd60856a5be507b51f972e3baa7b4f8a23ab5ce632e5cd0b8ffc7c5/firecloud_api_cds-0.2.0-py3-none-any.whl", hash = "sha256:41513aaec2b5bedf900996f3c04cccd438acda1b1266937ad41e66cd539402cd", size = 55003, upload-time = "2026-01-06T18:18:24.467Z" },
+    { url = "https://files.pythonhosted.org/packages/71/0c/8df067ab79546fad9ed08eddbbbc854e181254ad0d65b31c91d84e4a1073/firecloud_api_cds-0.2.1-py3-none-any.whl", hash = "sha256:fccbb786c0408c12466737d22391b5544fbd8b6355ade013a8c366ded5cc5420", size = 55076, upload-time = "2026-04-15T16:47:16.888Z" },
 ]
 
 [[package]]
@@ -366,7 +366,7 @@ wheels = [
 
 [[package]]
 name = "nebelung"
-version = "2.13.5"
+version = "2.14"
 source = { editable = "." }
 dependencies = [
     { name = "firecloud-api-cds" },
@@ -387,7 +387,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "firecloud-api-cds", specifier = ">=0.2.0,<0.3" },
+    { name = "firecloud-api-cds", specifier = ">=0.2.1,<0.3" },
     { name = "pandas", specifier = ">=1.5" },
     { name = "pandera", extras = ["strategies"], specifier = ">=0.20" },
     { name = "pd-flatten", specifier = ">=0.1" },

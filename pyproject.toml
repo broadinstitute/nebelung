@@ -1,6 +1,6 @@
 [project]
 name = "nebelung"
-version = "2.13.5"
+version = "2.14"
 description = "Firecloud API Wrapper"
 authors = [{ name = "Devin McCabe", email = "dmccabe@broadinstitute.org" }]
 requires-python = ">=3.11"
@@ -22,7 +22,7 @@ dependencies = [
     "pydantic>=2.8",
     "pandera[strategies]>=0.20",
     "pd-flatten>=0.1",
-    "firecloud-api-cds>=0.2.0,<0.3",
+    "firecloud-api-cds>=0.2.1,<0.3",
 ]
 
 [project.urls]

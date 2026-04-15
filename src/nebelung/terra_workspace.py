@@ -360,7 +360,7 @@ class TerraWorkspace:
         entity_type: str,
         entity_ids: Iterable[str],
         terra_workflow: TerraWorkflow,
-        since: datetime.datetime | None = None,
+        since: datetime.date | None = None,
     ) -> TypedDataFrame[EntityStateCounts]:
         """
         Get counts of workflow states for a workflow and a list of entity IDs.
@@ -368,7 +368,7 @@ class TerraWorkspace:
         :param entity_type: the kind of entity (e.g. "sample")
         :param entity_ids: a list of entity IDs
         :param terra_workflow: a workflow to potentially create a job for
-        :param since: don't collect job submissions before this `datetime`
+        :param since: don't collect job submissions before this `datetime.date`
         :return: a data frame of entity IDs and counts of workflow states:
             - queued
             - submitted
@@ -380,6 +380,8 @@ class TerraWorkspace:
             - failed
         """
 
+        start_date = since.isoformat() if since else None
+
         # get all submissions in the workspace
         submissions = type_data_frame(
             pd.DataFrame(
@@ -387,6 +389,7 @@ class TerraWorkspace:
                     firecloud_api.list_submissions,
                     namespace=self.workspace_namespace,
                     workspace=self.workspace_name,
+                    start_date=start_date,
                 )
             ),
             Submissions,
@@ -406,13 +409,6 @@ class TerraWorkspace:
         subs_for_workflow["submissionDate"] = pd.to_datetime(
             subs_for_workflow["submissionDate"]
         )
-
-        if since is not None:
-            # the list of submissions can grow very long and the endpoint doesn't
-            # support filtering
-            subs_for_workflow = subs_for_workflow.loc[
-                subs_for_workflow["submissionDate"].ge(pd.Timestamp(since, tz="UTC"))
-            ]
 
         # collect the entities submitted as part of this job and their status
         submitted_entities = []
@@ -526,6 +522,7 @@ class TerraWorkspace:
         ] = "NoNewCalls",
         user_comment: str | None = None,
         max_n_entities: int | None = None,
+        check_submissions_since: datetime.date | None = None,
         dry_run: bool = False,
     ):
         """
@@ -564,6 +561,8 @@ class TerraWorkspace:
         :param user_comment: a comment to attach to the workflow run
         :param max_n_entities: submit at most this many entities (random sample)
         :param dry_run: whether to skip updates to external data stores
+        :param check_submissions_since: optional minimum date for listing previous
+        submissions for this workflow (speeds up a slow Firecloud API call)
         """
 
         if max_n_entities == 0:
@@ -614,6 +613,7 @@ class TerraWorkspace:
             entity_type,
             entity_ids=entities_todo[entity_id_col],
             terra_workflow=terra_workflow,
+            since=check_submissions_since,
         )
 
         # remove runnning entities

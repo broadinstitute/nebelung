@@ -1,6 +1,6 @@
 [project]
 name = "nebelung"
-version = "2.14"
+version = "2.14.1"
 description = "Firecloud API Wrapper"
 authors = [{ name = "Devin McCabe", email = "dmccabe@broadinstitute.org" }]
 requires-python = ">=3.11"
@@ -23,6 +23,7 @@ dependencies = [
     "pandera[strategies]>=0.20",
     "pd-flatten>=0.1",
     "firecloud-api-cds>=0.2.1,<0.3",
+    "batch-evenly>=0.1.0",
 ]
 
 [project.urls]
@@ -33,7 +34,7 @@ Issues = "https://github.com/broadinstitute/nebelung/issues"
 [dependency-groups]
 dev = [
     "ruff>=0.12.1,<0.13",
-    "pyright>=1.1.408,<2",
+    "pyright>=1.1.409,<2",
     "pandas-stubs>=2.2.3.250527,<3",
     "pytest>=8.4.2,<9",
 ]

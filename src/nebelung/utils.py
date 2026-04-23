@@ -4,10 +4,10 @@ import random
 import re
 from decimal import Decimal
 from functools import partial
-from math import ceil, sqrt
+from math import sqrt
 from os import PathLike
 from time import sleep
-from typing import Any, Callable, Dict, Generator, Iterable, ParamSpec, Type
+from typing import Any, Callable, Dict, Iterable, ParamSpec, Type
 
 import pandas as pd
 import requests
@@ -39,38 +39,6 @@ def df_comprehender(x: pd.DataFrame, i1: int, i2: int) -> pd.DataFrame:
     """
 
     return x.iloc[i1:i2, :]
-
-
-def batch_evenly(
-    items: Iterable[T] | pd.DataFrame, max_batch_size: int
-) -> Generator[list[T] | pd.DataFrame, None, None]:
-    """
-    Yields evenly sized batches from an iterable or data frame such that each batch has
-    at most `max_batch_size` items.
-
-    :param items: the iterable or DataFrame to be batched
-    :param max_batch_size: the maximum size of each batch
-    :return: a generator yielding batches from the input items
-    """
-
-    if isinstance(items, pd.DataFrame):
-        batchable_items = items
-        comprehender = df_comprehender
-    else:
-        try:
-            batchable_items = list(items)
-            comprehender = list_comprehender
-        except TypeError as e:
-            raise TypeError(f"Cannot batch items of type {type(items)}: {e}")
-
-    n_items = len(batchable_items)
-    n_batches = ceil(n_items / max_batch_size)
-    batch_size = n_items / n_batches
-
-    for i in range(n_batches):
-        i1 = ceil(i * batch_size)
-        i2 = min(ceil((i + 1) * batch_size), n_items)
-        yield comprehender(batchable_items, i1, i2)  # pyright:ignore
 
 
 def type_data_frame(

@@ -6,6 +6,7 @@ from typing import Any, Iterable, Literal, Type, Unpack
 
 import numpy as np
 import pandas as pd
+from batch_evenly import batch_evenly
 from firecloud_api_cds import api as firecloud_api
 from pd_flatten import pd_flatten
 
@@ -19,12 +20,7 @@ from nebelung.types import (
     TerraJobSubmissionKwargs,
     TypedDataFrame,
 )
-from nebelung.utils import (
-    batch_evenly,
-    call_firecloud_api,
-    detect_col_mapping_io,
-    type_data_frame,
-)
+from nebelung.utils import call_firecloud_api, detect_col_mapping_io, type_data_frame
 
 
 class TerraWorkspace:
@@ -97,13 +93,14 @@ class TerraWorkspace:
         logging.info(f"{len(df)} entities to upload to {self.workspace_name}")
         buffer = StringIO()  # store batches of TSV rows in this buffer
 
-        for batch in batch_evenly(df, max_batch_size=500):
+        for _, batch in batch_evenly(df, max_batch_size=500):
+            assert isinstance(batch, pd.DataFrame)
             logging.info(f"Upserting {len(batch)} entities to {self.workspace_name}")
 
             # write the latest batch of TSV rows to the emptied buffer
             buffer.seek(0)
             buffer.truncate(0)
-            batch.to_csv(buffer, sep="\t", index=False)  # pyright: ignore
+            batch.to_csv(buffer, sep="\t", index=False)
 
             call_firecloud_api(
                 firecloud_api.upload_entities,

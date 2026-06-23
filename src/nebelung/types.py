@@ -56,6 +56,9 @@ class CoercedDataFrame(pa.DataFrameModel):
 
 
 class Submissions(CoercedDataFrame):
+    class Config(CoercedDataFrame.Config):
+        add_missing_columns = True
+
     deleteIntermediateOutputFiles: Series[pd.BooleanDtype]
     methodConfigurationDeleted: Series[pd.BooleanDtype]
     methodConfigurationName: Series[pd.StringDtype]
@@ -66,7 +69,7 @@ class Submissions(CoercedDataFrame):
     submissionRoot: Series[pd.StringDtype]
     submitter: Series[pd.StringDtype]
     useCallCache: Series[pd.BooleanDtype]
-    userComment: Series[pd.StringDtype] = pa.Field(nullable=True)
+    userComment: Series[pd.StringDtype] = pa.Field(nullable=True, default=None)
 
 
 class SubmittedEntities(CoercedDataFrame):

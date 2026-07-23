@@ -559,8 +559,8 @@ class TerraWorkspace:
         immediately after any task fails)
         :param user_comment: a comment to attach to the workflow run
         :param max_n_entities: submit at most this many entities (random sample)
-        :param max_nfrac_entities: submit at most this fraction of available entities
-        (random sample)
+        :param max_nfrac_entities: submit at most this fraction of all entities in
+        workspace (random sample)
         :param dry_run: whether to skip updates to external data stores
         :param check_submissions_since: optional minimum date for listing previous
         submissions for this workflow (speeds up a slow Firecloud API call)
@@ -657,7 +657,8 @@ class TerraWorkspace:
 
         elif max_n_entities is not None and len(state_counts) > max_n_entities:
             logging.info(
-                f"Sampling {max_n_entities} of {len(state_counts)} {entity_type}s"
+                f"Sampling {max_n_entities} of {len(state_counts)} "
+                f"submittable {entity_type}s"
             )
 
             # prioritize entities with fewest previous failures, then randomly
@@ -666,12 +667,12 @@ class TerraWorkspace:
             state_counts = state_counts.iloc[:max_n_entities]
 
         elif max_nfrac_entities is not None:
-            max_n_entities_frac = floor(len(state_counts) * max_nfrac_entities)
+            max_n_entities_frac = floor(len(entities) * max_nfrac_entities)
 
             if len(state_counts) > max_n_entities_frac:
                 logging.info(
                     f"Sampling {max_n_entities_frac} ({max_nfrac_entities * 100}%) of "
-                    f"{len(state_counts)} {entity_type}s"
+                    f"all {len(entities)} {entity_type}s"
                 )
 
                 # prioritize entities with fewest previous failures, then randomly

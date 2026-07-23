@@ -2,6 +2,7 @@ import datetime
 import logging
 import pathlib
 from io import StringIO
+from math import floor
 from typing import Any, Iterable, Literal, Type, Unpack
 
 import numpy as np
@@ -519,6 +520,7 @@ class TerraWorkspace:
         ] = "NoNewCalls",
         user_comment: str | None = None,
         max_n_entities: int | None = None,
+        max_nfrac_entities: float | None = None,
         check_submissions_since: datetime.date | None = None,
         dry_run: bool = False,
     ):
@@ -557,6 +559,8 @@ class TerraWorkspace:
         immediately after any task fails)
         :param user_comment: a comment to attach to the workflow run
         :param max_n_entities: submit at most this many entities (random sample)
+        :param max_nfrac_entities: submit at most this fraction of available entities
+        (random sample)
         :param dry_run: whether to skip updates to external data stores
         :param check_submissions_since: optional minimum date for listing previous
         submissions for this workflow (speeds up a slow Firecloud API call)
@@ -568,6 +572,16 @@ class TerraWorkspace:
                 f"{terra_workflow.method_name} delta job submissions"
             )
             return
+
+        if max_nfrac_entities == 0:
+            logging.info(
+                "max_nfrac_entities is set to 0, skipping "
+                f"{terra_workflow.method_name} delta job submissions"
+            )
+            return
+
+        if max_n_entities is not None and max_nfrac_entities is not None:
+            raise ValueError("max_n_entities and max_nfrac_entities cannot be both set")
 
         # get the method config for this workflow in this workspace
         workflow_config = self.get_workflow_config(terra_workflow)
@@ -640,6 +654,7 @@ class TerraWorkspace:
         if len(state_counts) == 0:
             logging.info(f"No {entity_type}s to run {terra_workflow.method_name} for")
             return
+
         elif max_n_entities is not None and len(state_counts) > max_n_entities:
             logging.info(
                 f"Sampling {max_n_entities} of {len(state_counts)} {entity_type}s"
@@ -649,6 +664,20 @@ class TerraWorkspace:
             state_counts["rnd"] = np.random.rand(len(state_counts))
             state_counts = state_counts.sort_values(["failed", "rnd"])
             state_counts = state_counts.iloc[:max_n_entities]
+
+        elif max_nfrac_entities is not None:
+            max_n_entities_frac = floor(len(state_counts) * max_nfrac_entities)
+
+            if len(state_counts) > max_n_entities_frac:
+                logging.info(
+                    f"Sampling {max_n_entities_frac} ({max_nfrac_entities * 100}%) of "
+                    f"{len(state_counts)} {entity_type}s"
+                )
+
+                # prioritize entities with fewest previous failures, then randomly
+                state_counts["rnd"] = np.random.rand(len(state_counts))
+                state_counts = state_counts.sort_values(["failed", "rnd"])
+                state_counts = state_counts.iloc[:max_n_entities_frac]
 
         if dry_run:
             logging.info(
